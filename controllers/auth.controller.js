@@ -98,17 +98,19 @@ const logout = async(req,res) =>{
 const forgotPassword = async (req, res) => {
     try {
         const { email } = req.body;
+
         if (!email) {
             return res.status(400).json({ error: "Email is required" });
         }
 
         const user = await User.findOne({ email });
+        
         if (!user) {
-            return res.status(400).json({ error: "User not found" });
+            return res.status(404).json({ error: "User not found" });
         }
 
         const resetToken = Math.floor(1000 + Math.random() * 9000);
-        const hash = await bcrypt.hash(resetToken, 10);
+        const hash = await bcrypt.hash(resetToken.toString(), 10);
 
         user.resetPasswordToken = hash;
         user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
@@ -141,16 +143,17 @@ const forgotPassword = async (req, res) => {
         transporter.sendMail(mailOptions, (err, info) => {
             if (err) {
                 console.error('Error sending email: ', err);
-                return res.status(500).send('Error sending email');
+                return res.status(500).json({ error: 'Error sending email' });
             }
-            res.status(200).json({ message: 'Email sent', resetToken});
+            res.status(200).json({ message: 'Password reset email sent' });
         });
 
     } catch (error) {
-        console.log("Error in forgotPassword controller", error.message);
+        console.error("Error in forgotPassword controller:", error.message);
         res.status(500).json({ error: "Internal Server Error" });
     }
 };
+
 
 const resetPassword = async (req, res) => {
     try {
