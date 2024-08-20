@@ -1,0 +1,114 @@
+/* General styles */
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  background-color: #f9f9f9;
+  color: #333;
+}
+
+a {
+  color: #00385c;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* Header styles */
+header {
+  background-color: #00385c;
+  color: white;
+  text-align: center;
+  padding: 0.5em 0;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+header h1 {
+  margin: 0;
+  font-size: 2.5em;
+}
+
+header p {
+  font-size: 1.2em;
+}
+
+/* Main content styles */
+main {
+  max-width: 800px;
+  margin: 2em auto;
+  padding: 0 1em;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+section {
+  margin-bottom: 2em;
+}
+
+h2 {
+  border-bottom: 2px solid #00385c;
+  padding-bottom: 0.5em;
+  font-size: 2em;
+  margin-bottom: 0.5em;
+}
+
+article {
+  margin-bottom: 1.5em;
+  padding: 1em;
+  border-left: 4px solid #00385c;
+  background-color: #f0f7ff;
+  border-radius: 4px;
+}
+
+article h3 {
+  margin-top: 0;
+  font-size: 1.5em;
+}
+
+pre {
+  background: #f4f4f4;
+  padding: 1em;
+  border-radius: 5px;
+  overflow: auto;
+  font-size: 0.9em;
+}
+
+pre code {
+  display: block;
+  white-space: pre-wrap;
+}
+
+button {
+  display: inline-block;
+  padding: 0.5em 1em;
+  background-color: #00385c;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-top: 1em;
+  transition: background-color 0.3s;
+}
+
+button:hover {
+  background-color: #005bb5;
+}
+
+/* Footer styles */
+footer {
+  text-align: center;
+  padding: 1em 0;
+  background: #00385c;
+  color: white;
+  bottom: 0;
+  width: 100%;
+  box-shadow: 0 -4px 6px rgba(0, 0, 0, 0.1);
+}
+
+footer p {
+  margin: 0;
+}
