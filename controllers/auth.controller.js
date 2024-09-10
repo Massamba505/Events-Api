@@ -29,8 +29,8 @@ const login = async (req, res) => {
             return res.status(201).json({
                 message: "Login successful",
                 token,
-                fullname,
-                email
+                fullname:user.fullname,
+                email:user.email
             });
         }
 
@@ -50,8 +50,8 @@ const login = async (req, res) => {
         res.status(201).json({
             message: "Login successful",
             token,
-            fullname,
-            email
+            fullname:findUser.fullname,
+            email:findUser.email
         });
 
     } catch (error) {

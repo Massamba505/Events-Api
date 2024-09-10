@@ -2,6 +2,7 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
+var cors = require("cors");
 
 const indexRouter = require('./routes/index');
 const authRouter = require('./routes/auth.route');
@@ -17,6 +18,11 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
+const corsOptions = {
+    origin: '*',
+  };
+  
+  app.use(cors(corsOptions));
 
 app.use('/api', indexRouter);
 app.use('/api/auth', authRouter);
