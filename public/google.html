@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Google Auth with Node.js Backend</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/prism.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism.min.css" rel="stylesheet"/>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center">Firebase Google Auth with Node.js Backend</h1>
+        <p class="lead text-center">A guide to integrating Firebase Google Authentication with a Node.js backend.</p>
+        
+        <hr>
+
+        <h2>1. Set Up Firebase Project</h2>
+        <p>To get started, go to the <a href="https://console.firebase.google.com/" target="_blank">Firebase Console</a> and create a new project. Navigate to <strong>Authentication</strong> and enable <strong>Google</strong> as a sign-in provider.</p>
+
+        <h2>2. Install Firebase Admin SDK in Node.js</h2>
+        <p>In your Node.js project, install the Firebase Admin SDK by running:</p>
+        <pre><code class="language-bash">npm install firebase-admin</code></pre>
+
+        <h2>3. Initialize Firebase Admin SDK</h2>
+        <p>Create a <code>firebase.js</code> file and add the following code to initialize Firebase:</p>
+        <pre><code class="language-javascript">
+const admin = require('firebase-admin');
+const serviceAccount = require('./path/to/serviceAccountKey.json');
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+});
+
+module.exports = admin;
+        </code></pre>
+
+        <h2>4. Verify Google ID Token in Node.js</h2>
+        <p>Create a middleware function to verify the Google Auth token received from the client:</p>
+        <pre><code class="language-javascript">
+const verifyToken = async (req, res, next) => {
+  const idToken = req.header('Authorization').split('Bearer ')[1];
+  if (!idToken) {
+    return res.status(401).send('Unauthorized: No token provided');
+  }
+
+  try {
+    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    req.user = decodedToken;
+    next();
+  } catch (error) {
+    res.status(401).send('Unauthorized: Invalid token');
+  }
+};
+        </code></pre>
+
+        <h2>5. Google Auth Integration on Frontend</h2>
+        <p>On the client side, you can use Firebase's client SDK to authenticate the user and retrieve the ID token:</p>
+        <pre><code class="language-javascript">
+import firebase from 'firebase/app';
+import 'firebase/auth';
+
+const firebaseConfig = {
+  apiKey: 'YOUR_API_KEY',
+  authDomain: 'YOUR_AUTH_DOMAIN',
+  projectId: 'YOUR_PROJECT_ID',
+  storageBucket: 'YOUR_STORAGE_BUCKET',
+  messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
+  appId: 'YOUR_APP_ID',
+};
+
+firebase.initializeApp(firebaseConfig);
+
+const googleProvider = new firebase.auth.GoogleAuthProvider();
+
+export const signInWithGoogle = async () => {
+  try {
+    const result = await firebase.auth().signInWithPopup(googleProvider);
+    const token = await result.user.getIdToken();
+    return token;
+  } catch (error) {
+    console.error('Error signing in with Google', error);
+  }
+};
+        </code></pre>
+
+        <h2>6. Send Token to Backend</h2>
+        <p>Once you get the token on the frontend, send it to your backend:</p>
+        <pre><code class="language-javascript">
+// Send token to your backend
+const sendTokenToBackend = async (token) => {
+  const response = await fetch('/profile', {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+  const data = await response.json();
+  console.log('Profile data: ', data);
+};
+
+signInWithGoogle().then(token => {
+  sendTokenToBackend(token);
+});
+        </code></pre>
+
+        <h2>7. Protect Your Routes</h2>
+        <p>Finally, protect your routes by using the <code>verifyToken</code> middleware in your Express routes:</p>
+        <pre><code class="language-javascript">
+const express = require('express');
+const app = express();
+
+app.get('/profile', verifyToken, (req, res) => {
+  res.send(`Hello ${req.user.name}, your email is ${req.user.email}`);
+});
+
+app.listen(5000, () => {
+  console.log('Server is running on port 5000');
+});
+        </code></pre>
+
+        <hr>
+
+        <footer class="text-center mt-5">
+            <p>&copy; 2024 Firebase Google Auth Integration Guide</p>
+        </footer>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/prism.min.js"></script>
+</body>
+</html>

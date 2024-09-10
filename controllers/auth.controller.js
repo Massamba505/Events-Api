@@ -3,32 +3,60 @@ const crypto = require('crypto');
 const bcrypt = require("bcryptjs");
 const transporter = require('../utils/transport');
 const generateTokenAndSetCookie = require("../utils/generateToken");
+const admin = require('../config/firebase');
 
-const login = async(req,res) =>{
+const login = async (req, res) => {
     try {
-        const {email,password} = req.body;
+        const { email, password, googleIdToken } = req.body;
 
-        if (!email || !password ) {
+        if (googleIdToken) {
+            const decodedToken = await admin.auth().verifyIdToken(googleIdToken);
+            const { email, name } = decodedToken;
+
+            let user = await User.findOne({ email });
+            
+            if (!user) {
+                user = new User({
+                    fullname: name,
+                    email,
+                    role: "user",
+                });
+                await user.save();
+            }
+
+            const token = generateTokenAndSetCookie(user._id, res);
+
+            return res.status(201).json({
+                message: "Login successful",
+                token,
+                fullname,
+                email
+            });
+        }
+
+        if (!email || !password) {
             return res.status(400).json({ error: "All details are required" });
         }
 
         const findUser = await User.findOne({ email });
+        const isPasswordCorrect = await bcrypt.compare(password, findUser?.password || "");
 
-        const isPasswordCorrect = await bcrypt.compare(password,findUser?.password || "");
-
-        if(!findUser || !isPasswordCorrect){
-            return res.status(400).json({error:"Invalid email or password"});
+        if (!findUser || !isPasswordCorrect) {
+            return res.status(400).json({ error: "Invalid email or password" });
         }
 
-        const token = generateTokenAndSetCookie(findUser._id,res);
+        const token = generateTokenAndSetCookie(findUser._id, res);
 
         res.status(201).json({
-            token
+            message: "Login successful",
+            token,
+            fullname,
+            email
         });
 
     } catch (error) {
         console.log("Error in login controller", error.message);
-        res.status(500).json({error:"Internal Server Error"});
+        res.status(500).json({ error: "Internal Server Error" });
     }
 };
 
@@ -73,7 +101,10 @@ const signup = async (req, res) => {
         const token = generateTokenAndSetCookie(newUser._id, res);
 
         res.status(201).json({
-            token
+            message: "SignUp successful",
+            token,
+            fullname,
+            email
         });
 
     } catch (error) {
@@ -153,7 +184,6 @@ const forgotPassword = async (req, res) => {
         res.status(500).json({ error: "Internal Server Error" });
     }
 };
-
 
 const resetPassword = async (req, res) => {
     try {

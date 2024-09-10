@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Auth Demo</title>
+    
+    <!-- Firebase App (the core Firebase SDK) -->
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-auth.js"></script>
+    
+    <script>
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+          apiKey: "AIzaSyA0ABDMzi58hMXrSEsbwYmbH_-9zIXRHHI",
+          authDomain: "events-and-activities-97e17.firebaseapp.com",
+          projectId: "events-and-activities-97e17",
+          storageBucket: "events-and-activities-97e17.appspot.com",
+          messagingSenderId: "346195858859",
+          appId: "1:346195858859:web:cfdfc866016c7b8304aeee"
+        };
+      
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+
+        // Function to sign in with Google
+        function signInWithGoogle() {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            firebase.auth().signInWithPopup(provider)
+                .then((result) => {
+                    // Get the Firebase ID token
+                    result.user.getIdToken().then((googleIdToken) => {
+                        // Send the Google ID token to the backend
+                        sendGoogleTokenToBackend(googleIdToken);
+                    });
+                })
+                .catch((error) => {
+                    console.error("Error signing in with Google", error);
+                });
+        }
+    
+        // Function to send Google token to backend
+        function sendGoogleTokenToBackend(googleIdToken) {
+            fetch('http://localhost:3000/api/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + googleIdToken,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    googleIdToken: googleIdToken
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Login successful:', data);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+    </script>
+    
+</head>
+<body>
+    <div style="text-align: center;">
+        <h1>Google Auth Demo</h1>
+        <button onclick="signInWithGoogle()">Sign in with Google</button>
+        <p id="message"></p>
+    </div>
+</body>
+</html>
