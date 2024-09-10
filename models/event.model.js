@@ -72,6 +72,12 @@ const eventSchema = new Schema({
     // type: Schema.Types.ObjectId, 
     // ref: 'EventCategory' 
   }]
+
+  // categories: [{ 
+  //   type: Schema.Types.ObjectId, 
+  //   ref: 'EventCategory' 
+  // }]
+
 },{timestamps:true});
 
 module.exports = mongoose.model('Event', eventSchema);
