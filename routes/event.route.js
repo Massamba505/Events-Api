@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { authenticate } = require('../middlewares/protect.middleware');
-const { allEvents, allUpcomingEvents, allInProgressEvents, allPastEvents, sort, EventDetails, createEvent, updateEvent, cancelEvent } = require('../controllers/events.controller');
+const { allEvents, allUpcomingEvents, allInProgressEvents, allPastEvents, sort, EventDetails, createEvent, updateEvent, cancelEvent } = require('../controllers/event');
 
 // Event routes
 router.get('/', allEvents);

@@ -10,7 +10,8 @@ const parseTimeToDate = (date, time) => {
 // Helper function to map events to the required format
 const mapEvents = (events) =>
   events.map((event) => ({
-    id: event.id,
+    id: event._id.toString(),
+    event_id: event.event_id,
     eventAuthor: event.user_id.fullname,
     title: event.title,
     description: event.description,
@@ -23,8 +24,9 @@ const mapEvents = (events) =>
     maxAttendees: event.max_attendees,
     currentAttendees: event.current_attendees,
     category: event.category,
-    images: event.images,
-  }));
+    images: event.images || []
+}));
+
 
 // Get all events
 const allEvents = async (req, res) => {
@@ -161,36 +163,46 @@ const EventDetails = async (req, res) => {
       return res.status(400).json({ error: "Event ID is required" });
     }
 
-    const event = await Event.findById(eventId).populate("user_id", "fullname email");
+    let event = [];
+    
+    try {
+      event = await Event.findOne({ event_id: eventId }).populate("user_id", "fullname email");
+    } catch (error) {
+      event = await Event.findById(eventId).populate("user_id", "fullname email");
+    }
 
     if (!event) {
       return res.status(404).json({ error: "Event not found" });
     }
 
+    // Return event details
     res.status(200).json({
       success: true,
       data: {
-        id: event.id,
+        id: event._id.toString(),
+        event_id: event.event_id,
         eventAuthor: event.user_id.fullname,
         title: event.title,
         description: event.description,
         location: event.location,
         date: event.date,
-        startTime: event.start_time,
-        endTime: event.end_time,
-        isPaid: event.is_paid,
+        startTime: event.start_time, // Ensure that this matches your schema
+        endTime: event.end_time,     // Ensure that this matches your schema
+        isPaid: event.is_paid,       // Ensure that this matches your schema
         ticketPrice: event.ticket_price,
         maxAttendees: event.max_attendees,
         currentAttendees: event.current_attendees,
         category: event.category,
-        images: event.images,
+        images: event.images || []
       },
     });
+
   } catch (error) {
     console.error("Error fetching event details:", error.message);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
 
 // Create event
 const createEvent = async (req, res) => {
@@ -198,11 +210,16 @@ const createEvent = async (req, res) => {
     const { title, description, location, start_time, end_time, date, is_paid, ticket_price, max_attendees, images, category } = req.body;
 
     if (!title || !description || !location || !date || !start_time || !end_time || is_paid === undefined) {
-      return res.status(400).json({ message: "Please fill in all required fields" });
+      return res.status(400).json({ error: "Please fill in all required fields" });
     }
+
+    // Generate a new event_id (you can customize this logic as needed)
+    const lastEvent = await Event.findOne().sort({ event_id: -1 }).exec();
+    const newEventId = lastEvent ? lastEvent.event_id + 1 : 1000; // Start with 1000 if no events exist
 
     const newEvent = new Event({
       user_id: req.user._id,
+      event_id: newEventId,
       title,
       description,
       location,
@@ -220,9 +237,10 @@ const createEvent = async (req, res) => {
     res.status(201).json({ message: "Event created successfully", event: newEvent });
   } catch (error) {
     console.error("Error creating event:", error.message);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ error: "Server error" });
   }
 };
+
 
 // Update event
 const updateEvent = async (req, res) => {
@@ -253,11 +271,13 @@ const cancelEvent = async (req, res) => {
       return res.status(404).json({ success: false, message: "Event not found." });
     }
 
-    await event.remove();
-    res.status(200).json({ success: true, message: "Event cancelled successfully" });
+    event.isCancelled = true;
+    await event.save();
+
+    res.status(200).json({ success: true, message: "Event cancelled successfully." });
   } catch (error) {
     console.error("Error cancelling event:", error.message);
-    res.status(500).json({ success: false, message: "Internal Server Error" });
+    res.status(500).json({ error: "Internal Server Error" });
   }
 };
 

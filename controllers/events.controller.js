@@ -422,6 +422,20 @@ const createEvent = async (req, res) => {
         category,
       } = req.body;
 
+      console.log({
+        title,
+        description,
+        location,
+        start_time,
+        end_time,
+        date, // DD/MM/YYYY
+        is_paid,
+        ticket_price,
+        max_attendees,
+        images,
+        category,
+      } );
+
       if (!title || !description || !location || !date  || !start_time || !end_time || is_paid === undefined) {
         return res.status(400).json({ message: 'Please fill in all required fields' });
       }
@@ -442,7 +456,7 @@ const createEvent = async (req, res) => {
       });
   
       // Save the event to the database
-      await newEvent.save();
+    //   await newEvent.save();
   
       res.status(201).json({ message: 'Event created successfully', event: newEvent });
     } catch (error) {

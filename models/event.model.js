@@ -4,7 +4,13 @@ const { Schema } = mongoose;
 const eventSchema = new Schema({
   user_id: { 
     type: Schema.Types.ObjectId,
-    ref:"User",
+    ref: "User",
+    required: true 
+  },
+
+  event_id: { 
+    type: Number, 
+    unique: true, 
     required: true 
   },
 
@@ -45,11 +51,11 @@ const eventSchema = new Schema({
 
   ticket_price: { 
     type: Number,
-    default:0
+    default: 0
   },
 
   max_attendees: { 
-    type: Number,
+    type: Number
   },
 
   current_attendees: { 
@@ -57,7 +63,7 @@ const eventSchema = new Schema({
     default: 0 
   },
 
-  images: [{
+  images: [{ 
     type: String 
   }],
 
@@ -67,16 +73,8 @@ const eventSchema = new Schema({
   },
 
   category: [{ 
-    type:String
-    // type: Schema.Types.ObjectId, 
-    // ref: 'EventCategory' 
+    type: String 
   }]
-
-  // categories: [{ 
-  //   type: Schema.Types.ObjectId, 
-  //   ref: 'EventCategory' 
-  // }]
-
-},{timestamps:true});
+}, { timestamps: true });
 
 module.exports = mongoose.model('Event', eventSchema);
