@@ -1,5 +1,8 @@
 const Event = require("../models/event.model");
 const UserPreference = require("../models/userpreference.model");
+const { uploadImage } = require("../utils/azureBlob");
+const path = require('path');
+const fs = require('fs');
 
 const parseTimeToDate = (date, time) => {
   const [hours, minutes] = time.split(":").map(Number);
@@ -204,19 +207,57 @@ const EventDetails = async (req, res) => {
 };
 
 
-// Create event
 const createEvent = async (req, res) => {
   try {
-    const { title, description, location, start_time, end_time, date, is_paid, ticket_price, max_attendees, images, category } = req.body;
+    const { title, description, location, start_time, end_time, date, is_paid, ticket_price, max_attendees, category } = req.body;
+    const images = req.files; // Since you're expecting multiple files
 
-    if (!title || !description || !location || !date || !start_time || !end_time || is_paid === undefined) {
+    // Validate required fields
+    if (!title || !description || !location || !date || !start_time || !end_time || typeof is_paid === 'undefined') {
       return res.status(400).json({ error: "Please fill in all required fields" });
     }
 
-    // Generate a new event_id (you can customize this logic as needed)
+    // Validate ticket price for paid events
+    if (!is_paid) {
+      if(!ticket_price || isNaN(ticket_price)){
+        return res.status(400).json({ error: "Please provide a valid ticket price for paid events" });
+      }
+    }
+
+    // Validate if images exist
+    if (!images || images.length === 0) {
+      return res.status(400).json({ error: "Please upload at least one image" });
+    }
+
+    // Generate a new event_id
     const lastEvent = await Event.findOne().sort({ event_id: -1 }).exec();
     const newEventId = lastEvent ? lastEvent.event_id + 1 : 1000; // Start with 1000 if no events exist
 
+    // Upload images and get their URLs
+    let imageUrls = [];
+    if (images && images.length > 0) {
+      const uploadPromises = images.map(async (image) => {
+        const imagePath = path.join(__dirname,"..", 'uploads', image.filename); // Path where multer temporarily stores images
+        try {
+          const imageUrl = await uploadImage(imagePath); // Assuming uploadImage uploads to cloud and returns the URL
+          // Clean up temporary file asynchronously
+          fs.unlink(imagePath, (err) => {
+            if (err) {
+              console.error(`Error deleting file: ${imagePath}`, err);
+            }
+          });
+
+          return imageUrl;
+        } catch (error) {
+          console.error("Error uploading image:", error);
+          throw new Error("Image upload failed");
+        }
+      });
+
+      imageUrls = await Promise.all(uploadPromises);
+    }
+
+    // Create and save the new event
     const newEvent = new Event({
       user_id: req.user._id,
       event_id: newEventId,
@@ -228,19 +269,18 @@ const createEvent = async (req, res) => {
       date,
       is_paid,
       ticket_price: is_paid ? ticket_price : 0,
-      max_attendees,
-      images,
+      max_attendees: max_attendees || null, // Allow max_attendees to be optional
+      images: imageUrls,
       category,
     });
 
-    await newEvent.save();
+    await newEvent.save(); // Save to the database
     res.status(201).json({ message: "Event created successfully", event: newEvent });
   } catch (error) {
-    console.error("Error creating event:", error.message);
+    console.error("Error creating event:", error);
     res.status(500).json({ error: "Server error" });
   }
 };
-
 
 // Update event
 const updateEvent = async (req, res) => {
@@ -264,11 +304,18 @@ const updateEvent = async (req, res) => {
 // Cancel event
 const cancelEvent = async (req, res) => {
   try {
-    const { id } = req.params;
+    const eventId = req.params.id;
 
-    const event = await Event.findById(id);
-    if (!event) {
-      return res.status(404).json({ success: false, message: "Event not found." });
+    if (!eventId) {
+      return res.status(400).json({ error: "Event ID is required" });
+    }
+
+    let event = [];
+    
+    try {
+      event = await Event.findOne({ event_id: eventId });
+    } catch (error) {
+      event = await Event.findById(eventId);
     }
 
     event.isCancelled = true;

@@ -13,8 +13,6 @@ const authenticate = async(req,res,next)=>{
             return res.status(401).json({error:"Unuathorized - No Token Provided"});
         }
 
-        console.log(decoded);
-
         const user = await User.findById(decoded.userId); //it is called userId because of jwt.sign(*{userId}*
         if(!user){
             return res.status(401).json({error:"User not found"});

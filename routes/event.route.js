@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { authenticate } = require('../middlewares/protect.middleware');
 const { allEvents, allUpcomingEvents, allInProgressEvents, allPastEvents, sort, EventDetails, createEvent, updateEvent, cancelEvent } = require('../controllers/event');
+const upload = require("../utils/multerConfig");
 
 // Event routes
 router.get('/', allEvents);
@@ -12,7 +13,7 @@ router.get('/sort-by', sort);
 router.get('/:id', EventDetails);
 
 // Protected routes
-router.post('/new', authenticate, createEvent);
+router.post('/new', authenticate, upload.array('images'), createEvent);
 router.put('/update/:id', authenticate, updateEvent);
 router.patch('/:id/cancel', cancelEvent);
 
