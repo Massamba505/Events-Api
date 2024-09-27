@@ -30,7 +30,8 @@ const login = async (req, res) => {
                 message: "Login successful",
                 token,
                 fullname:user.fullname,
-                email:user.email
+                email:user.email,
+                role: user.role
             });
         }
 
@@ -51,7 +52,8 @@ const login = async (req, res) => {
             message: "Login successful",
             token,
             fullname:findUser.fullname,
-            email:findUser.email
+            email:findUser.email,
+            role: findUser.role
         });
 
     } catch (error) {
@@ -74,10 +76,10 @@ const signup = async (req, res) => {
             role = "user";
         }
 
-        const type_of_users = ['user', 'admin'];
+        const allowedRoles = ['organizer', 'admin', 'user'];
 
-        if (!type_of_users.includes(role)) {
-            return res.status(400).json({ error: "undefined user type" });
+        if (!allowedRoles.includes(role)) {
+            return res.status(400).json({ error: "Invalid user role" });
         }
 
         const existingUserByEmail = await User.findOne({ email });
@@ -104,7 +106,8 @@ const signup = async (req, res) => {
             message: "SignUp successful",
             token,
             fullname,
-            email
+            email,
+            role: newUser.role
         });
 
     } catch (error) {
@@ -137,11 +140,13 @@ const forgotPassword = async (req, res) => {
         const user = await User.findOne({ email });
         
         if (!user) {
-            return res.status(404).json({ error: "User not found" });
+            return res.status(404).json({ error: "No user with such email" });
         }
 
-        const resetToken = Math.floor(1000 + Math.random() * 9000);
-        const hash = await bcrypt.hash(resetToken.toString(), 10);
+        const resetToken = Math.floor(1000 + Math.random() * 9000).toString();
+        const hash = await bcrypt.hash(resetToken, 10);
+
+        console.log(resetToken);
 
         user.resetPasswordToken = hash;
         user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
@@ -189,8 +194,10 @@ const resetPassword = async (req, res) => {
     try {
         const { resetToken } = req.params;
         const { email } = req.body;
-        if (!resetToken) {
-            return res.status(400).json({ error: "reset Token is required" });
+        console.log(resetToken,email);
+
+        if (!resetToken || !email) {
+            return res.status(400).json({ error: "Reset token and email are required" });
         }
 
         const user = await User.findOne({
@@ -199,12 +206,12 @@ const resetPassword = async (req, res) => {
         });
 
         if (!user) {
-            return res.status(400).json({ error: "Invalid or expired resetToken" });
+            return res.status(400).json({ error: "Invalid or expired token" });
         }
 
         const isMatch = await bcrypt.compare(resetToken, user.resetPasswordToken);
         if (!isMatch) {
-            return res.status(400).json({ error: "Invalid or expired reset Token" });
+            return res.status(400).json({ error: "Invalid or expired reset token" });
         }
 
         res.status(200).json({ message: "Valid reset token", userId: user._id });

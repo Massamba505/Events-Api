@@ -13,28 +13,27 @@ const userSchema = new Schema({
     },
     password: {
         type: String,
-        // required: true
     },
     authId: {
         type: String,
-        // required: true
     },
     role: {
         type: String,
-        enum: ['user', 'admin'],
+        enum: ['organizer', 'admin', 'user'],
         default: 'user'
     },
+    profile_picture: { 
+        type: String, 
+        default: '' 
+    },
+
     get_notified: {
       type: Boolean, 
       default: true 
     },
     
     resetPasswordToken: String,
-    resetPasswordExpires: Date,
-    createdAt: {
-        type: Date,
-        default: Date.now
-    }
-});
+    resetPasswordExpires: Date
+},{ timestamps: true });
 
 module.exports = mongoose.model('User', userSchema);
