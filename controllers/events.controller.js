@@ -378,93 +378,95 @@ const createEvent = async (req, res) => {
             title, description, location, date, startTime, endTime, isPaid, ticketPrice,
             maxAttendees = null, category,food_stalls = false
         } = req.body;
+    
+        const images = req.files; // Assuming you're using multer for file uploads
+    
+        // Validate required fields
+        if (!title || !description || !location || !date || !startTime || !endTime || typeof isPaid === 'undefined') {
+            return res.status(400).json({ error: 'Please fill in all required fields.' });
+        }
   
-      const images = req.files; // Assuming you're using multer for file uploads
+        // Validate ticket price for paid events
+        if (isPaid) {
+            if (typeof ticketPrice !== 'number' || isNaN(ticketPrice) || ticketPrice < 0) {
+            return res.status(400).json({ error: 'Please provide a valid ticket price for paid events.' });
+            }
+        }
   
-      // Validate required fields
-      if (!title || !description || !location || !date || !startTime || !endTime || typeof isPaid === 'undefined') {
-        return res.status(400).json({ error: 'Please fill in all required fields.' });
-      }
-  
-      // Validate ticket price for paid events
-      if (isPaid && (!ticketPrice || isNaN(ticketPrice))) {
-        return res.status(400).json({ error: 'Please provide a valid ticket price for paid events.' });
-      }
-  
-      // Validate if images exist (only if you want to enforce image uploads)
-      if (!images || images.length === 0) {
-        return res.status(400).json({ error: 'Please upload at least one image.' });
-      }
-  
-      // Generate a new event_id
-      const lastEvent = await Event.findOne().sort({ event_id: -1 }).exec();
-      const newEventId = lastEvent ? lastEvent.event_id + 1 : 1000; // Start with 1000 if no events exist
-  
-      // Upload images and get their URLs
-      let imageUrls = [];
-      if (images && images.length > 0) {
-        const uploadPromises = images.map(async (image) => {
-          const imagePath = path.join(__dirname, '..', 'uploads', image.filename); // Path where multer temporarily stores images
-  
-          try {
-            const imageUrl = await uploadImage(imagePath); // Assuming uploadImage uploads to cloud and returns the URL
-  
-            // Clean up temporary file asynchronously
-            fs.unlink(imagePath, (err) => {
-              if (err) {
-                console.error(`Error deleting file: ${imagePath}`, err);
-              }
+        // Validate if images exist (only if you want to enforce image uploads)
+        if (!images || images.length === 0) {
+            return res.status(400).json({ error: 'Please upload at least one image.' });
+        }
+    
+        // Generate a new event_id
+        const lastEvent = await Event.findOne().sort({ event_id: -1 }).exec();
+        const newEventId = lastEvent ? lastEvent.event_id + 1 : 1000;
+    
+        // Upload images and get their URLs
+        let imageUrls = [];
+        if (images && images.length > 0) {
+            const uploadPromises = images.map(async (image) => {
+            const imagePath = path.join(__dirname, '..', 'uploads', image.filename); // Path where multer temporarily stores images
+    
+            try {
+                const imageUrl = await uploadImage(imagePath); // Assuming uploadImage uploads to cloud and returns the URL
+    
+                // Clean up temporary file asynchronously
+                fs.unlink(imagePath, (err) => {
+                if (err) {
+                    console.error(`Error deleting file: ${imagePath}`, err);
+                }
+                });
+    
+                return imageUrl;
+            } catch (error) {
+                console.error('Error uploading image:', error);
+                throw new Error('Image upload failed');
+            }
             });
-  
-            return imageUrl;
-          } catch (error) {
-            console.error('Error uploading image:', error);
-            throw new Error('Image upload failed');
-          }
+    
+            imageUrls = await Promise.all(uploadPromises);
+        }
+        // Ensure category is an array of ObjectId
+        const categoryIds = Array.isArray(category) ? category : JSON.parse(category);
+    
+        // Create and save the new event
+        const newEvent = new Event({
+            user_id: req.user._id,
+            event_id: newEventId,
+            title,
+            description,
+            location,
+            date,
+            start_time: startTime,
+            end_time: endTime,
+            is_paid: isPaid,
+            ticket_price: isPaid ? ticketPrice : 0,
+            max_attendees: maxAttendees,
+            images:imageUrls,
+            category:categoryIds,
+            food_stalls
         });
-  
-        imageUrls = await Promise.all(uploadPromises);
-      }
-    // Ensure category is an array of ObjectId
-    const categoryIds = Array.isArray(category) ? category : JSON.parse(category);
-  
-      // Create and save the new event
-      const newEvent = new Event({
-        user_id: req.user._id,
-        event_id: newEventId,
-        title,
-        description,
-        location,
-        date,
-        start_time: startTime,
-        end_time: endTime,
-        is_paid: isPaid,
-        ticket_price: isPaid ? ticketPrice : 0,
-        max_attendees: maxAttendees,
-        images:imageUrls,
-        category:categoryIds,
-        food_stalls
-      });
-  
-      await newEvent.save(); // Save to the database
-  
-      res.status(201).json({ message: 'Event created successfully', event:  {
-            id: newEvent._id.toString(),
-            event_id: newEvent.event_id,
-            eventAuthor: newEvent.user_id.fullname,
-            title: newEvent.title,
-            description: newEvent.description,
-            location: newEvent.location,
-            date: newEvent.date,
-            startTime: newEvent.start_time,
-            endTime: newEvent.end_time,
-            isPaid: newEvent.is_paid,
-            ticketPrice: newEvent.ticket_price,
-            maxAttendees: newEvent.max_attendees,
-            currentAttendees: newEvent.current_attendees,
-            category: newEvent.category,
-            images: newEvent.images || []
-        } });
+    
+        await newEvent.save(); // Save to the database
+    
+        res.status(201).json({ message: 'Event created successfully', event:  {
+                id: newEvent._id.toString(),
+                event_id: newEvent.event_id,
+                eventAuthor: newEvent.user_id.fullname,
+                title: newEvent.title,
+                description: newEvent.description,
+                location: newEvent.location,
+                date: newEvent.date,
+                startTime: newEvent.start_time,
+                endTime: newEvent.end_time,
+                isPaid: newEvent.is_paid,
+                ticketPrice: newEvent.ticket_price,
+                maxAttendees: newEvent.max_attendees,
+                currentAttendees: newEvent.current_attendees,
+                category: newEvent.category,
+                images: newEvent.images || []
+            } });
 
     } catch (error) {
       console.error('Error creating event:', error);
