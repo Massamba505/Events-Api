@@ -20,10 +20,13 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 const corsOptions = {
-    origin: '*',
-  };
-  
-  app.use(cors(corsOptions));
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
 
 app.use('/api', indexRouter);
 app.use('/api/auth', authRouter);
