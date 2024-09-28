@@ -7,257 +7,199 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/prism.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism.min.css" rel="stylesheet"/>
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .navbar {
+            background-color: #1484f4;
+        }
+        .navbar-brand, .nav-link {
+            color: white !important;
+        }
+        h1, h2 {
+            color: #137fea;
+        }
+        .card {
+            box-shadow: 0 4px 8px rgb(9, 129, 204);
+            border-radius: 8px;
+        }
+        .card-header {
+            background-color: #2185ea;
+            color: white;
+        }
+        .badge-category {
+            background-color: #17a2b8;
+            font-size: 0.8rem;
+            margin-right: 5px;
+        }
+        pre {
+            background-color: #f1f3f5;
+            padding: 15px;
+            border-radius: 6px;
+        }
+        footer {
+            background-color: #2185ea;
+            color: white;
+            padding: 10px 0;
+        }
+    </style>
 </head>
 <body>
+    <!-- Navbar -->
+
+    <!-- Main Content -->
     <div class="container mt-5">
-        <h1 class="text-center">Events and Activities API Documentation 3A</h1>
-        <p class="lead text-center">A guide to using the Event API endpoints for managing and retrieving event data.</p>
+        <h1 class="text-center mb-4">Events and Activities API Documentation 3A</h1>
+        <p class="lead text-center mb-5">A guide to using the Event API endpoints for managing and retrieving event data.</p>
 
-        <hr>
-
-        <h2>Available Endpoints</h2>
-
-        <div class="mb-5">
-            <h4>1. Get All Events</h4>
-            <p><strong>Endpoint:</strong> <code>GET /api/events</code></p>
-            <p>Retrieve all events from the database.</p>
-            <h5>Example Request:</h5>
-            <pre><code>fetch('/api/events').then(response => response.json()).then(data => console.log(data));</code></pre>
-            <h5>Response Example:</h5>
-            <pre><code class="language-json">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>Available Endpoints</h4>
+            </div>
+            <div class="card-body">
+                <!-- 1. Get All Events -->
+                <div class="mb-4">
+                    <h5>1. Get All Events</h5>
+                    <p><strong>Endpoint:</strong> <code>GET /api/events</code></p>
+                    <p>Retrieve all events from the database.</p>
+                    <h6>Example Request:</h6>
+                    <pre><code>fetch('/api/events').then(response => response.json()).then(data => console.log(data));</code></pre>
+                    <h6>Response Example:</h6>
+                    <pre><code class="language-json">
 {
     "success": true,
     "count": 3,
     "data": [
         {
-            "id": "66e90631ae9d378896f314cd",
             "event_id": 1002,
-            "eventAuthor": "mukhaaaa",
-            "title": "yes",
-            "description": "no",
-            "location": "hello",
-            "date": "20/20/30",
-            "startTime": "22:50",
-            "endTime": "21:33",
+            "eventAuthor": "John Doe",
+            "email": "john@example.com",
+            "title": "Tech Conference",
+            "description": "An exciting tech conference.",
+            "location": "New York",
+            "date": "2024-10-01",
+            "startTime": "09:00 AM",
+            "endTime": "05:00 PM",
             "isPaid": true,
-            "ticketPrice": 30000,
-            "maxAttendees": 300,
-            "currentAttendees": 0,
+            "ticketPrice": 100,
+            "maxAttendees": 500,
+            "currentAttendees": 250,
             "category": [
-                "hello",
-                "hy"
+                { "name": "Tech" },
+                { "name": "Conference" }
             ],
-            "images": []
+            "images": ["image1.jpg", "image2.jpg"]
         },
         {
-            "id": "66e90618ae9d378896f314ca",
             "event_id": 1001,
-            "eventAuthor": "mukhaaaa",
-            "title": "yes",
-            "description": "no",
-            "location": "hello",
-            "date": "20/20/30",
-            "startTime": "22:50",
-            "endTime": "21:33",
-            "isPaid": true,
-            "ticketPrice": 30000,
+            "eventAuthor": "Jane Smith",
+            "email": "jane@example.com",
+            "title": "Art Expo",
+            "description": "A modern art exhibition.",
+            "location": "Los Angeles",
+            "date": "2024-11-10",
+            "startTime": "10:00 AM",
+            "endTime": "06:00 PM",
+            "isPaid": false,
+            "ticketPrice": 0,
             "maxAttendees": 300,
-            "currentAttendees": 0,
+            "currentAttendees": 200,
             "category": [
-                "hello",
-                "hy"
+                { "name": "Art" },
+                { "name": "Exhibition" }
             ],
-            "images": []
-        },
-        {
-            "id": "66e90547ae9d378896f314c7",
-            "event_id": 1000,
-            "eventAuthor": "mukhaaaa",
-            "title": "yes",
-            "description": "no",
-            "location": "hello",
-            "date": "20/20/204",
-            "startTime": "22:50",
-            "endTime": "21:33",
-            "isPaid": true,
-            "ticketPrice": 30000,
-            "maxAttendees": 300,
-            "currentAttendees": 0,
-            "category": [
-                "hello",
-                "hy"
-            ],
-            "images": []
+            "images": ["art1.jpg", "art2.jpg"]
         }
     ]
 }
-            </code></pre>
-        </div>
+                    </code></pre>
+                </div>
 
-        <div class="mb-5">
-            <h4>2. Get Upcoming Events</h4>
-            <p><strong>Endpoint:</strong> <code>GET /api/events/upcoming-events</code></p>
-            <p>Retrieve events that are scheduled to start in the future.</p>
-            <h5>Example Request:</h5>
-            <pre><code>fetch('/api/events/upcoming-events').then(response => response.json()).then(data => console.log(data));</code></pre>
-            <h5>Response Example:</h5>
-            <pre><code class="language-json">
+                <!-- 2. Get Upcoming Events -->
+                <div class="mb-4">
+                    <h5>2. Get Upcoming Events</h5>
+                    <p><strong>Endpoint:</strong> <code>GET /api/events/upcoming-events</code></p>
+                    <p>Retrieve events that are scheduled to start in the future.</p>
+                    <h6>Example Request:</h6>
+                    <pre><code>fetch('/api/events/upcoming-events').then(response => response.json()).then(data => console.log(data));</code></pre>
+                    <h6>Response Example:</h6>
+                    <pre><code class="language-json">
 {
     "success": true,
     "count": 2,
     "data": [
         {
-            "id": "66e90631ae9d378896f314cd",
             "event_id": 1002,
-            "eventAuthor": "mukhaaaa",
-            "title": "yes",
-            "description": "no",
-            "location": "hello",
-            "date": "20/20/30",
-            "startTime": "22:50",
-            "endTime": "21:33",
+            "eventAuthor": "John Doe",
+            "email": "john@example.com",
+            "title": "Tech Conference",
+            "description": "An exciting tech conference.",
+            "location": "New York",
+            "date": "2024-10-01",
+            "startTime": "09:00 AM",
+            "endTime": "05:00 PM",
             "isPaid": true,
-            "ticketPrice": 30000,
-            "maxAttendees": 300,
-            "currentAttendees": 0,
+            "ticketPrice": 100,
+            "maxAttendees": 500,
+            "currentAttendees": 250,
             "category": [
-                "hello",
-                "hy"
+                { "name": "Tech" },
+                { "name": "Conference" }
             ],
-            "images": []
-        },
-        {
-            "id": "66e90618ae9d378896f314ca",
-            "event_id": 1001,
-            "eventAuthor": "mukhaaaa",
-            "title": "yes",
-            "description": "no",
-            "location": "hello",
-            "date": "20/20/30",
-            "startTime": "22:50",
-            "endTime": "21:33",
-            "isPaid": true,
-            "ticketPrice": 30000,
-            "maxAttendees": 300,
-            "currentAttendees": 0,
-            "category": [
-                "hello",
-                "hy"
-            ],
-            "images": []
+            "images": ["image1.jpg", "image2.jpg"]
         }
     ]
 }
-            </code></pre>
-        </div>
+                    </code></pre>
+                </div>
 
-        <div class="mb-5">
-            <h4>3. Get In-Progress Events</h4>
-            <p><strong>Endpoint:</strong> <code>GET /api/events/inprogress-events</code></p>
-            <p>Retrieve events that are currently in progress.</p>
-            <h5>Example Request:</h5>
-            <pre><code>fetch('/api/events/inprogress-events').then(response => response.json()).then(data => console.log(data));</code></pre>
-        </div>
+                <!-- 3. Get In-Progress Events -->
+                <div class="mb-4">
+                    <h5>3. Get In-Progress Events</h5>
+                    <p><strong>Endpoint:</strong> <code>GET /api/events/inprogress-events</code></p>
+                    <p>Retrieve events that are currently in progress.</p>
+                    <h6>Example Request:</h6>
+                    <pre><code>fetch('/api/events/inprogress-events').then(response => response.json()).then(data => console.log(data));</code></pre>
+                </div>
 
-        <div class="mb-5">
-            <h4>4. Get Past Events</h4>
-            <p><strong>Endpoint:</strong> <code>GET /api/events/past-events</code></p>
-            <p>Retrieve events that have already ended.</p>
-            <h5>Example Request:</h5>
-            <pre><code>fetch('/api/events/past-events').then(response => response.json()).then(data => console.log(data));</code></pre>
-            <h5>Response Example:</h5>
-            <pre><code class="language-json">
-{
-    "success": true,
-    "count": 1,
-    "data": [
-        {
-            "id": "66e90547ae9d378896f314c7",
-            "event_id": 1000,
-            "eventAuthor": "mukhaaaa",
-            "title": "yes",
-            "description": "no",
-            "location": "hello",
-            "date": "20/20/204",
-            "startTime": "22:50",
-            "endTime": "21:33",
-            "isPaid": true,
-            "ticketPrice": 30000,
-            "maxAttendees": 300,
-            "currentAttendees": 0,
-            "category": [
-                "hello",
-                "hy"
-            ],
-            "images": []
-        }
-    ]
-}
-            </code></pre>
-        </div>
+                <!-- 4. Get Past Events -->
+                <div class="mb-4">
+                    <h5>4. Get Past Events</h5>
+                    <p><strong>Endpoint:</strong> <code>GET /api/events/past-events</code></p>
+                    <p>Retrieve events that have already ended.</p>
+                    <h6>Example Request:</h6>
+                    <pre><code>fetch('/api/events/past-events').then(response => response.json()).then(data => console.log(data));</code></pre>
+                </div>
 
-        <div class="mb-5">
-            <h4>5. Sort Events</h4>
-            <p><strong>Endpoint:</strong> <code>GET /api/events/sort-by?criteria=&lt;criteria&gt;&amp;order=&lt;order&gt;</code></p>
-            <p>Sort events based on the provided criteria and order.</p>
-            <h5>Example Request:</h5>
-            <pre><code>fetch('/api/events/sort-by?criteria=date&order=asc').then(response => response.json()).then(data => console.log(data));</code></pre>
-        </div>
+                <!-- 5. Sort Events -->
+                <div class="mb-4">
+                    <h5>5. Sort Events</h5>
+                    <p><strong>Endpoint:</strong> <code>GET /api/events/sort-by?criteria=&lt;criteria&gt;&amp;order=&lt;order&gt;</code></p>
+                    <p>Sort events based on the provided criteria and order.</p>
+                    <h6>Example Request:</h6>
+                    <pre><code>fetch('/api/events/sort-by?criteria=date&order=asc').then(response => response.json()).then(data => console.log(data));</code></pre>
+                </div>
 
-        <div class="mb-5">
-            <h4>6. Get Event Details</h4>
-            <p><strong>Endpoint:</strong> <code>GET /api/events/:id</code></p>
-            <p>You can retrieve event details using either the <strong>_id</strong> or the <strong>event_id</strong> of the event. Provide the corresponding value in the URL parameter.</p>
-            
-            <h5>Example Request:</h5>
-            <pre><code>
-        <h5>Using id</h5> 
-        fetch('/api/events/64b2e8a9d3c7e53c9d0e4a9b')
-        .then(response => response.json())
-        .then(data => console.log(data));
-        
-        <h5>Using event_id</h5> 
-        fetch('/api/events/1003')
-        .then(response => response.json())
-        .then(data => console.log(data));
-        </code></pre>
-            
-            <h5>Response Example:</h5>
-            <pre><code class="language-json">
-        {
-            "success": true,
-            "data": {
-                "id": "64b2e8a9d3c7e53c9d0e4a9b",
-                "event_id": 1003,
-                "eventAuthor": "johndoe",
-                "title": "Tech Talk: Future of AI",
-                "description": "A discussion on the future of artificial intelligence.",
-                "location": "TechHub, City Center",
-                "date": "2024-12-01",
-                "startTime": "10:00 AM",
-                "endTime": "12:00 PM",
-                "isPaid": false,
-                "ticketPrice": null,
-                "maxAttendees": 200,
-                "currentAttendees": 150,
-                "category": [
-                    "Technology",
-                    "AI"
-                ],
-                "images": [
-                    "image1.jpg",
-                    "image2.jpg"
-                ]
-            }
-        }
-            </code></pre>
+                <!-- 6. Get Event Details -->
+                <div class="mb-4">
+                    <h5>6. Get Event Details</h5>
+                    <p><strong>Endpoint:</strong> <code>GET /api/events/:id</code></p>
+                    <p>Retrieve event details using either the <strong>_id</strong> or <strong>event_id</strong>.</p>
+                    <h6>Example Request:</h6>
+                    <pre><code>fetch('/api/events/1001').then(response => response.json()).then(data => console.log(data));</code></pre>
+                </div>
+            </div>
         </div>
-        
     </div>
-    <hr/>
-    
+
+    <!-- Footer -->
     <footer class="text-center mt-5">
-        <p>&copy; Events and Activities API Documentation 3A</p>
+        <div class="container">
+            <p>&copy; 2024 Events API Documentation. All rights reserved.</p>
+        </div>
     </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

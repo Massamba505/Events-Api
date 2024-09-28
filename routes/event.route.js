@@ -1,11 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const { authenticate } = require('../middlewares/protect.middleware');
-const { allEvents, allUpcomingEvents, allInProgressEvents, allPastEvents, sort, EventDetails, createEvent, updateEvent, cancelEvent } = require('../controllers/event');
+const { allEvents, allUpcomingEvents, allInProgressEvents, allPastEvents, sort, EventDetails, createEvent, updateEvent, cancelEvent, search2 } = require('../controllers/events.controller');
 const upload = require("../utils/multerConfig");
 
 // Event routes
 router.get('/', allEvents);
+router.get('/search', search2);
 router.get('/upcoming-events', allUpcomingEvents);
 router.get('/inprogress-events', allInProgressEvents);
 router.get('/past-events', allPastEvents);

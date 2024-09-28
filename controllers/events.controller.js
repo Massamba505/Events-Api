@@ -1,5 +1,10 @@
 const Event = require("../models/event.model")
+const Category = require("../models/eventCategory.model");
 const UserPreference = require("../models/userpreference.model");
+const { uploadImage } = require("../utils/azureBlob");
+const path = require('path');
+const fs = require('fs');
+const userModel = require("../models/user.model");
 
 
 const parseTimeToDate = (date, time) => {
@@ -9,34 +14,33 @@ const parseTimeToDate = (date, time) => {
     return new Date(YYYY, MM - 1, DD, hours, minutes);
 };
 
+// Helper function to map events to the required format
+const mapEvents = (events) =>
+    events.map((event) => ({
+      event_id: event.event_id,
+      eventAuthor: event.user_id.fullname,
+      email: event.user_id.email,
+      title: event.title,
+      description: event.description,
+      location: event.location,
+      date: event.date,
+      startTime: event.start_time,
+      endTime: event.end_time,
+      isPaid: event.is_paid,
+      ticketPrice: event.ticket_price,
+      maxAttendees: event.max_attendees,
+      currentAttendees: event.current_attendees,
+      category: event.category,
+      images: event.images || []
+  }));
+
 // getEvents
 
 const allEvents = async (req, res) => {
     try {
-        const events = await Event.find().sort({ createdAt: -1 })
-        .populate({
-          path: 'user_id',
-          select: 'fullname'
-        });
+        const events = await Event.find().sort({ createdAt: -1 }).populate("user_id", "fullname email profile_picture").populate("category");
 
-        const allevents = events.map((event,id) => {
-            return {
-                id:event.id,
-                eventAuthor:event.user_id.fullname,
-                title: event.title,
-                description: event.description,
-                location: event.location,
-                date: event.date,
-                startTime: event.start_time,
-                endTime: event.end_time,
-                isPaid: event.is_paid,
-                ticketPrice: event.ticket_price,
-                maxAttendees: event.max_attendees,
-                currentAttendees: event.current_attendees,
-                category: event.category,
-                images: event.images,
-            }
-        });
+        const allevents = mapEvents(events)
 
         res.status(200).json({
             success: true,
@@ -51,64 +55,39 @@ const allEvents = async (req, res) => {
 
 const allUpcomingEvents = async (req, res) => {
     try {
-        const user_id = req.user ? req.user._id : null;
-
-        let events = await Event.find({})
-        .populate({
-          path: 'user_id',
-          select: 'fullname'
-        });
-        
-        if (user_id) {
-            const userPreference = await UserPreference.findOne({ user_id });
-
-            if (userPreference) {
-                events = events.sort((a, b) => {
-                    const aInPreferredCategory = userPreference.preferred_category.includes(a.category);
-                    const bInPreferredCategory = userPreference.preferred_category.includes(b.category);
-
-                    if (aInPreferredCategory && !bInPreferredCategory) return -1;
-                    if (!aInPreferredCategory && bInPreferredCategory) return 1;
-                    return 0;
-                });
-            }
+      const user_id = req.user ? req.user._id : null;
+      let events = await Event.find({})
+      .populate("user_id", "fullname email profile_picture").populate("category");
+  
+      if (user_id) {
+        const userPreference = await UserPreference.findOne({ user_id });
+        if (userPreference) {
+          events = events.sort((a, b) => {
+            const aInPreferredCategory = a.category.some(cat => userPreference.preferred_category.includes(cat));
+            const bInPreferredCategory = b.category.some(cat => userPreference.preferred_category.includes(cat));
+            if (aInPreferredCategory && !bInPreferredCategory) return -1;
+            if (!aInPreferredCategory && bInPreferredCategory) return 1;
+            return 0;
+          });
         }
-
-        const now = new Date();
-        events = events.filter(event => {
-            const eventStartTime = parseTimeToDate(event.date,event.start_time);
-            return eventStartTime >= now;
-        });
-
-        const allevents = events.map((event,id) => {
-            return {
-                id:event.id,
-                eventAuthor:event.user_id.fullname,
-                title: event.title,
-                description: event.description,
-                location: event.location,
-                date: event.date,
-                startTime: event.start_time,
-                endTime: event.end_time,
-                isPaid: event.is_paid,
-                ticketPrice: event.ticket_price,
-                maxAttendees: event.max_attendees,
-                currentAttendees: event.current_attendees,
-                category: event.category,
-                images: event.images,
-                // createdAt: event.createdAt,
-                // updatedAt: event.updatedAt
-            }
-        });
-
-        res.status(200).json({
-            success: true,
-            count: allevents.length,
-            data: allevents
-        });
+      }
+  
+      const now = new Date();
+      events = events.filter(event => {
+        const eventStartTime = parseTimeToDate(event.date, event.start_time);
+        return eventStartTime >= now;
+      });
+  
+      const allevents = mapEvents(events);
+  
+      res.status(200).json({
+        success: true,
+        count: allevents.length,
+        data: allevents
+      });
     } catch (error) {
-        console.error('Error in fetching events: ', error.message);
-        res.status(500).json({ error: 'Internal Server Error' });
+      console.error('Error in fetching upcoming events: ', error.message);
+      res.status(500).json({ error: 'Internal Server Error' });
     }
 };
 
@@ -116,19 +95,15 @@ const allInProgressEvents = async (req, res) => {
     try {
         const user_id = req.user ? req.user._id : null;
 
-        let events = await Event.find({})
-        .populate({
-          path: 'user_id',
-          select: 'fullname'
-        });
+        let events = await Event.find({}).populate("user_id", "fullname email profile_picture").populate("category");
 
         if (user_id) {
             const userPreference = await UserPreference.findOne({ user_id });
 
             if (userPreference) {
                 events = events.sort((a, b) => {
-                    const aInPreferredCategory = userPreference.preferred_category.includes(a.category);
-                    const bInPreferredCategory = userPreference.preferred_category.includes(b.category);
+                    const aInPreferredCategory = a.category.some(cat => userPreference.preferred_category.includes(cat));
+                    const bInPreferredCategory = b.category.some(cat => userPreference.preferred_category.includes(cat));
 
                     if (aInPreferredCategory && !bInPreferredCategory) return -1;
                     if (!aInPreferredCategory && bInPreferredCategory) return 1;
@@ -144,24 +119,7 @@ const allInProgressEvents = async (req, res) => {
             return eventStartTime <= now && eventEndTime >= now;
         });
 
-        const allevents = events.map((event,id) => {
-            return {
-                id:event.id,
-                eventAuthor:event.user_id.fullname,
-                title: event.title,
-                description: event.description,
-                location: event.location,
-                date: event.date,
-                startTime: event.start_time,
-                endTime: event.end_time,
-                isPaid: event.is_paid,
-                ticketPrice: event.ticket_price,
-                maxAttendees: event.max_attendees,
-                currentAttendees: event.current_attendees,
-                category: event.category,
-                images: event.images,
-            }
-        });
+        const allevents = mapEvents(events);
 
         res.status(200).json({
             success: true,
@@ -178,19 +136,15 @@ const allPastEvents = async (req, res) => {
     try {
         const user_id = req.user ? req.user._id : null;
 
-        let events = await Event.find({})
-        .populate({
-          path: 'user_id',
-          select: 'fullname'
-        });
+        let events = await Event.find({}).populate("user_id", "fullname email profile_picture").populate("category");
 
         if (user_id) {
             const userPreference = await UserPreference.findOne({ user_id });
 
             if (userPreference) {
                 events = events.sort((a, b) => {
-                    const aInPreferredCategory = userPreference.preferred_category.includes(a.category);
-                    const bInPreferredCategory = userPreference.preferred_category.includes(b.category);
+                    const aInPreferredCategory = a.category.some(cat => userPreference.preferred_category.includes(cat));
+                    const bInPreferredCategory = b.category.some(cat => userPreference.preferred_category.includes(cat));
 
                     if (aInPreferredCategory && !bInPreferredCategory) return -1;
                     if (!aInPreferredCategory && bInPreferredCategory) return 1;
@@ -205,26 +159,7 @@ const allPastEvents = async (req, res) => {
             return eventEndTime < now;
         });
 
-        const allevents = events.map((event,id) => {
-            return {
-                id:event.id,
-                eventAuthor:event.user_id.fullname,
-                title: event.title,
-                description: event.description,
-                location: event.location,
-                date: event.date,
-                startTime: event.start_time,
-                endTime: event.end_time,
-                isPaid: event.is_paid,
-                ticketPrice: event.ticket_price,
-                maxAttendees: event.max_attendees,
-                currentAttendees: event.current_attendees,
-                category: event.category,
-                images: event.images,
-                // createdAt: event.createdAt,
-                // updatedAt: event.updatedAt
-            }
-        });
+        const allevents = mapEvents(events);
 
         res.status(200).json({
             success: true,
@@ -244,11 +179,28 @@ const sort = async (req,res)=>{
     try {
         const { criteria = 'date', order = 'asc' } = req.query;
 
+        const user_id = req.user ? req.user._id : null;
+
         let events = await Event.find({})
         .populate({
           path: 'user_id',
           select: 'fullname'
         });
+
+        if (user_id) {
+            const userPreference = await UserPreference.findOne({ user_id });
+
+            if (userPreference) {
+                events = events.sort((a, b) => {
+                    const aInPreferredCategory = a.category.some(cat => userPreference.preferred_category.includes(cat));
+                    const bInPreferredCategory = b.category.some(cat => userPreference.preferred_category.includes(cat));
+
+                    if (aInPreferredCategory && !bInPreferredCategory) return -1;
+                    if (!aInPreferredCategory && bInPreferredCategory) return 1;
+                    return 0;
+                });
+            }
+        }
 
         switch(criteria.toLowerCase()) {
             case 'title':
@@ -271,24 +223,7 @@ const sort = async (req,res)=>{
             events = events.reverse();
         }
 
-        const allevents = events.map((event, id) => {
-            return {
-                id: event.id,
-                eventAuthor:event.user_id.fullname,
-                title: event.title,
-                description: event.description,
-                location: event.location,
-                date: event.date,
-                startTime: event.start_time,
-                endTime: event.end_time,
-                isPaid: event.is_paid,
-                ticketPrice: event.ticket_price,
-                maxAttendees: event.max_attendees,
-                currentAttendees: event.current_attendees,
-                category: event.category,
-                images: event.images
-            };
-        });
+        const allevents = mapEvents(events)
 
         res.status(200).json({
             success: true,
@@ -306,22 +241,29 @@ const sort = async (req,res)=>{
 const EventDetails = async (req, res) => {
     try {
         const eventId = req.params.id;
-
+    
         if (!eventId) {
-            return res.status(400).json({ error: 'Event ID is required' });
+          return res.status(400).json({ error: "Event ID is required" });
         }
-
-        const event = await Event.findById(eventId);
-
+    
+        let event = [];
+        
+        try {
+          event = await Event.findOne({ event_id: eventId }).populate("user_id", "fullname email profile_picture").populate("category");
+        } catch (error) {
+          event = await Event.findById(eventId).populate("user_id", "fullname email profile_picture").populate("category");
+        }
+    
         if (!event) {
-            return res.status(404).json({ error: 'Event not found' });
+          return res.status(404).json({ error: "Event not found" });
         }
 
         res.status(200).json({
             success: true,
             data: {
-                id: event.id,
-                eventAuthor:event.user_id.fullname,
+                id: event._id.toString(),
+                event_id: event.event_id,
+                eventAuthor: event.user_id.fullname,
                 title: event.title,
                 description: event.description,
                 location: event.location,
@@ -333,7 +275,8 @@ const EventDetails = async (req, res) => {
                 maxAttendees: event.max_attendees,
                 currentAttendees: event.current_attendees,
                 category: event.category,
-                images: event.images
+                email: event.user_id.email,
+                images: event.images || []
             }
         });
     } catch (error) {
@@ -347,22 +290,30 @@ const EventDetails = async (req, res) => {
 const updateEvent = async (req, res) => {
     try {
         const { id } = req.params;
-        const { eventAuthor, title, description, location, date, startTime, endTime, isPaid, ticketPrice, maxAttendees, currentAttendees, category, images } = req.body;
-
-        if (!eventAuthor || !title || !description || !location || !date || !startTime || !endTime || typeof isPaid !== 'boolean' || typeof ticketPrice !== 'number' || typeof maxAttendees !== 'number' || typeof currentAttendees !== 'number' || !category || !Array.isArray(category) || !images || !Array.isArray(images)) {
-            return res.status(400).json({ success: false, message: 'Please provide all required fields with correct types.' });
+        const {
+        title, description, location, date, startTime, endTime, isPaid, ticketPrice,
+        maxAttendees, currentAttendees, category, images
+        } = req.body;
+    
+        if (!title || !description || !location || !date || !startTime || !endTime || isPaid === undefined) {
+        return res.status(400).json({ success: false, message: 'Please provide all required fields.' });
         }
-
-        const event = await Event.findByIdAndUpdate(id, { title, description, location, date, startTime, endTime, isPaid, ticketPrice, maxAttendees, currentAttendees, category, images}, { new: true });
-
+    
+        const event = await Event.findByIdAndUpdate(id, {
+        title, description, location, date, start_time: startTime, end_time: endTime,
+        is_paid: isPaid, ticket_price: ticketPrice, max_attendees: maxAttendees,
+        current_attendees: currentAttendees, category, images
+        }, { new: true });
+    
         if (!event) {
-            return res.status(404).json({ success: false, message: 'Event not found.' });
+        return res.status(404).json({ success: false, message: 'Event not found.' });
         }
 
         res.status(200).json({ success: true, data:
             {
-                id: event.id,
-                eventAuthor:event.user_id.fullname,
+                id: event._id.toString(),
+                event_id: event.event_id,
+                eventAuthor: event.user_id.fullname,
                 title: event.title,
                 description: event.description,
                 location: event.location,
@@ -374,7 +325,7 @@ const updateEvent = async (req, res) => {
                 maxAttendees: event.max_attendees,
                 currentAttendees: event.current_attendees,
                 category: event.category,
-                images: event.images
+                images: event.images || []
             }
         });
     } catch (error) {
@@ -395,7 +346,23 @@ const cancelEvent = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Event not found.' });
         }
 
-        res.status(200).json({ success: true, data: event });
+        res.status(200).json({ success: true, data: {
+            id: event._id.toString(),
+            event_id: event.event_id,
+            eventAuthor: event.user_id.fullname,
+            title: event.title,
+            description: event.description,
+            location: event.location,
+            date: event.date,
+            startTime: event.start_time,
+            endTime: event.end_time,
+            isPaid: event.is_paid,
+            ticketPrice: event.ticket_price,
+            maxAttendees: event.max_attendees,
+            currentAttendees: event.current_attendees,
+            category: event.category,
+            images: event.images || []
+        } });
     } catch (error) {
         console.error('Error in cancelling an events: ', error.message);
         res.status(500).json({ error: "Internal Server Error" });
@@ -405,132 +372,203 @@ const cancelEvent = async (req, res) => {
 
 // =====================================================================================
 
-
 const createEvent = async (req, res) => {
     try {
-      const {
-        title,
-        description,
-        location,
-        start_time,
-        end_time,
-        date, // DD/MM/YYYY
-        is_paid,
-        ticket_price,
-        max_attendees,
-        images,
-        category,
-      } = req.body;
-
-      console.log({
-        title,
-        description,
-        location,
-        start_time,
-        end_time,
-        date, // DD/MM/YYYY
-        is_paid,
-        ticket_price,
-        max_attendees,
-        images,
-        category,
-      } );
-
-      if (!title || !description || !location || !date  || !start_time || !end_time || is_paid === undefined) {
-        return res.status(400).json({ message: 'Please fill in all required fields' });
+        const {
+            title, description, location, date, startTime, endTime, isPaid, ticketPrice,
+            maxAttendees = null, category,food_stalls = false
+        } = req.body;
+  
+      const images = req.files; // Assuming you're using multer for file uploads
+  
+      // Validate required fields
+      if (!title || !description || !location || !date || !startTime || !endTime || typeof isPaid === 'undefined') {
+        return res.status(400).json({ error: 'Please fill in all required fields.' });
       }
   
+      // Validate ticket price for paid events
+      if (isPaid && (!ticketPrice || isNaN(ticketPrice))) {
+        return res.status(400).json({ error: 'Please provide a valid ticket price for paid events.' });
+      }
+  
+      // Validate if images exist (only if you want to enforce image uploads)
+      if (!images || images.length === 0) {
+        return res.status(400).json({ error: 'Please upload at least one image.' });
+      }
+  
+      // Generate a new event_id
+      const lastEvent = await Event.findOne().sort({ event_id: -1 }).exec();
+      const newEventId = lastEvent ? lastEvent.event_id + 1 : 1000; // Start with 1000 if no events exist
+  
+      // Upload images and get their URLs
+      let imageUrls = [];
+      if (images && images.length > 0) {
+        const uploadPromises = images.map(async (image) => {
+          const imagePath = path.join(__dirname, '..', 'uploads', image.filename); // Path where multer temporarily stores images
+  
+          try {
+            const imageUrl = await uploadImage(imagePath); // Assuming uploadImage uploads to cloud and returns the URL
+  
+            // Clean up temporary file asynchronously
+            fs.unlink(imagePath, (err) => {
+              if (err) {
+                console.error(`Error deleting file: ${imagePath}`, err);
+              }
+            });
+  
+            return imageUrl;
+          } catch (error) {
+            console.error('Error uploading image:', error);
+            throw new Error('Image upload failed');
+          }
+        });
+  
+        imageUrls = await Promise.all(uploadPromises);
+      }
+    // Ensure category is an array of ObjectId
+    const categoryIds = Array.isArray(category) ? category : JSON.parse(category);
+  
+      // Create and save the new event
       const newEvent = new Event({
         user_id: req.user._id,
+        event_id: newEventId,
         title,
         description,
         location,
-        start_time,
-        end_time,
         date,
-        is_paid,
-        ticket_price: is_paid ? ticket_price : 0,
-        max_attendees,
-        images,
-        category,
+        start_time: startTime,
+        end_time: endTime,
+        is_paid: isPaid,
+        ticket_price: isPaid ? ticketPrice : 0,
+        max_attendees: maxAttendees,
+        images:imageUrls,
+        category:categoryIds,
+        food_stalls
       });
   
-      // Save the event to the database
-    //   await newEvent.save();
+      await newEvent.save(); // Save to the database
   
-      res.status(201).json({ message: 'Event created successfully', event: newEvent });
+      res.status(201).json({ message: 'Event created successfully', event:  {
+            id: newEvent._id.toString(),
+            event_id: newEvent.event_id,
+            eventAuthor: newEvent.user_id.fullname,
+            title: newEvent.title,
+            description: newEvent.description,
+            location: newEvent.location,
+            date: newEvent.date,
+            startTime: newEvent.start_time,
+            endTime: newEvent.end_time,
+            isPaid: newEvent.is_paid,
+            ticketPrice: newEvent.ticket_price,
+            maxAttendees: newEvent.max_attendees,
+            currentAttendees: newEvent.current_attendees,
+            category: newEvent.category,
+            images: newEvent.images || []
+        } });
+
     } catch (error) {
       console.error('Error creating event:', error);
-      res.status(500).json({ message: 'Server error' });
+      res.status(500).json({ error: 'Server error' });
     }
 };
 
-// const updateEvent = async(req,res)=>{
-//     try {
-//         const { eventId } = req.params;
-//         const eventUpdates = req.body;
+const search = async (req, res) => {
+    const { query } = req.query; // Extract the search query from the query parameters
 
-//         // Find and update the event
-//         const updatedEvent = await Event.findByIdAndUpdate(eventId, eventUpdates, { new: true });
+    if (!query) {
+        return res.status(400).json({ error: 'Query parameter is required' });
+    }
 
-//         if (!updatedEvent) {
-//             return res.status(404).json({ error: 'Event not found' });
-//         }
+    try {
+        // Disable caching for this response
+        res.set('Cache-Control', 'no-store');
 
-//         // Find all registrations for the event
-//         const registrations = await TicketRegistration.find({ event_id: eventId }).populate('user_id');
+        const events = await Event.find({
+            $or: [
+                { title: { $regex: query, $options: 'i' } }, // Case-insensitive search for title
+                { description: { $regex: query, $options: 'i' } } // Case-insensitive search for description
+            ]
+        });
 
-//         const notifications = registrations.map(registration => ({
-//             user_id: registration.user_id._id,
-//             event_id: eventId,
-//             message: `The event "${updatedEvent.title}" has been updated.`,
-//             sent_at: new Date(),
-//             is_read:false
-//         }));
+        res.status(200).json({ data: mapEvents(events) }); // Send back the found events
+    } catch (error) {
+        console.error('Error fetching events:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
 
-//         // Save all notifications
-//         await Notification.insertMany(notifications);
-        
-//         // Send email notifications to users
-//         const emailPromises = registrations.map(registration => {
-//             const mailOptions = {
-//                 to: registration.user_id.email,
-//                 from: process.env.EMAIL_USER,
-//                 subject: 'Event Update Notification',
-//                 text: `Hello ${registration.user_id.fullname},\n\n` +
-//                       `The event "${updatedEvent.title}" you are registered for has been updated.\n\n` +
-//                       `Please visit the event page for the latest details.\n\n` +
-//                       `Thank you,\nEvent Management Team`
-//             };
+const search2 = async (req, res) => {
+    const { query } = req.query;
 
-//             return transporter.sendMail(mailOptions);
-//         });
+    if (!query) {
+        return res.status(400).json({ error: 'Query parameter is required' });
+    }
+    console.log(query)
 
-//         await Promise.all(emailPromises);
+    try {
+        // Perform the aggregation to look up category details
+        const events = await Event.aggregate([
+            {
+                $lookup: {
+                    from: Category.collection.name, // Reference to the categories collection
+                    localField: 'category', // Field from the events collection
+                    foreignField: '_id', // Field from the categories collection
+                    as: 'categoryDetails' // Name of the new array field to add to the output documents
+                }
+            },
+            {
+                $match: {
+                    $or: [
+                        { title: { $regex: query, $options: 'i' } },
+                        { description: { $regex: query, $options: 'i' } },
+                        { 'categoryDetails.name': { $regex: query, $options: 'i' } } // Match category names
+                    ]
+                }
+            }
+        ]);
 
-//         res.status(200).json({
-//             message: 'Event updated and notifications sent successfully',
-//             event: updatedEvent
-//         });
-//     } catch (error) {
-//         console.error('Error updating event:', error.message);
-//         res.status(500).json({ error: 'Internal Server Error' });
-//     }
-// }
+        if (events.length === 0) {
+            return res.status(404).json({ error: 'No events found' });
+        }
+
+        // Map events to the desired format
+        let mappedEvents = events;
+
+        // Extract user IDs from the events
+        const userIds = mappedEvents.map(event => event.user_id);
+
+        // Fetch user details based on the user IDs
+        const users = await userModel.find({ _id: { $in: userIds } }, 'fullname email profile_picture');
+
+        // Create a lookup object for users for quick access
+        const userMap = users.reduce((acc, user) => {
+            acc[user._id] = user; // Create a map with user IDs as keys
+            return acc;
+        }, {});
+
+        // Attach user details to the mapped events
+        const eventsWithUserDetails = mappedEvents.map(event => {
+            const user_id = userMap[event.user_id]; // Get user details from the map
+            return { ...event, user_id }; // Attach user details to each event
+        });
+        res.status(200).json({ data: mapEvents(eventsWithUserDetails) });
+    } catch (error) {
+        console.error('Error fetching events:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
 
 
 module.exports = {
     updateEvent,
-    // AllTicketAndRegistration,
     createEvent,
-    // TicketReg,
-
     allEvents,
     allUpcomingEvents,
     allInProgressEvents,
     allPastEvents,
-
     EventDetails,
     sort,
-    cancelEvent
+    cancelEvent,
+    search2,
+    search
 }

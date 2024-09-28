@@ -10,7 +10,7 @@ const eventSchema = new Schema({
 
   event_id: { 
     type: Number, 
-    unique: true, 
+    unique: true,
     required: true 
   },
 
@@ -49,6 +49,11 @@ const eventSchema = new Schema({
     required: true 
   },
 
+  food_stalls: { 
+    type: Boolean,
+    default:false
+  },
+
   ticket_price: { 
     type: Number,
     default: 0
@@ -62,6 +67,14 @@ const eventSchema = new Schema({
     type: Number, 
     default: 0 
   },
+  
+  current_attendee_list: { 
+    type: [{
+        type: Schema.Types.ObjectId,
+        ref: "User",
+    }], 
+    default: [] 
+  },
 
   images: [{ 
     type: String 
@@ -73,8 +86,10 @@ const eventSchema = new Schema({
   },
 
   category: [{ 
-    type: String 
-  }]
+    type: Schema.Types.ObjectId, 
+    ref: 'EventCategory'  
+  }],
+
 }, { timestamps: true });
 
 module.exports = mongoose.model('Event', eventSchema);

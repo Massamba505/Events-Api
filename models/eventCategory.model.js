@@ -1,8 +1,13 @@
-const eventCategorySchema = new Schema({
+const mongoose = require("mongoose");
+
+const eventCategorySchema = new mongoose.Schema({
   name: { 
     type: String, 
     required: true, 
-    unique: true 
+    unique: true
+  },
+  image:{
+    type: String
   }
 }, { timestamps: true });
 
