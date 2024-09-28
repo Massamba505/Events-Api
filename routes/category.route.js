@@ -6,6 +6,7 @@ const {
   updateCategory,
   deleteCategory,
 } = require('../controllers/category.controller');
+
 const upload = require('../utils/multerConfig'); // Configure multer for file uploads
 
 const { authenticate } = require('../middlewares/protect.middleware');

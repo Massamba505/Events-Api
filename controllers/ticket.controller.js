@@ -1,4 +1,4 @@
-const TicketRegistration = require('../models/ticketRegistration.model');
+const TicketRegistration = require('../models/ticket.model');
 const QRCode = require('qrcode');
 const CryptoJS = require('crypto-js');
 const User = require("../models/user.model");
