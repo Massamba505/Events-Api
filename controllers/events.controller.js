@@ -380,6 +380,7 @@ const createEvent = async (req, res) => {
         } = req.body;
     
         const images = req.files; // Assuming you're using multer for file uploads
+        console.log(images,title, description, location, date, startTime, endTime, isPaid, ticketPrice, maxAttendees, category,food_stalls)
     
         // Validate required fields
         if (!title || !description || !location || !date || !startTime || !endTime || typeof isPaid === 'undefined') {
@@ -387,9 +388,13 @@ const createEvent = async (req, res) => {
         }
   
         // Validate ticket price for paid events
+        // Validate ticket price for paid events
+        let price = 0;
         if (isPaid) {
-            if (typeof ticketPrice !== 'number' || isNaN(ticketPrice) || ticketPrice < 0) {
-            return res.status(400).json({ error: 'Please provide a valid ticket price for paid events.' });
+            price = parseFloat(ticketPrice);
+
+            if (isNaN(price) || price <= 0) {
+                return res.status(400).json({ error: 'Please provide a valid ticket price greater than zero for paid events.' });
             }
         }
   
@@ -441,7 +446,7 @@ const createEvent = async (req, res) => {
             start_time: startTime,
             end_time: endTime,
             is_paid: isPaid,
-            ticket_price: isPaid ? ticketPrice : 0,
+            ticket_price: isPaid ? ticketPrice : price,
             max_attendees: maxAttendees,
             images:imageUrls,
             category:categoryIds,
