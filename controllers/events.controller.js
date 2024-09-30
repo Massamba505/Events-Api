@@ -6,6 +6,40 @@ const path = require('path');
 const fs = require('fs');
 const userModel = require("../models/user.model");
 
+const checkClasses = async (date, start, end) => {
+    let url = "https://group2afunctionapp.azurewebsites.net/api/getSCHEDULE?code=tFdF0OUbZjKmNgrFFKDjQmhS4c0Pi5cFr6NmzDtk6dq6AzFuDIQCQA%3D%3D";
+    
+    try {
+      let response = await fetch(url);
+      if (!response.ok){
+        throw new Error("Network response was not ok "+response.statusText);
+      }
+  
+      let data = await response.json();
+      console.log(data);
+  
+      for (let i = 0; i < data.length; i++) {
+        if (data[i].DATE === date) {
+          if (data[i].START_TIME >= start && data[i].END_TIME <= end) {
+            return false;
+          }
+        }
+      }
+  
+      return true;
+    }catch(error){
+      console.error("Error fetching:", error);
+      return false;
+    }
+  };
+  ///use it like this
+//   checkClasses("2024-09-30", "10:00", "12:00").then(result => {
+//     if (result) {
+//       console.log("The time slot is available.");
+//     } else {
+//       console.log("The time slot is not available.");
+//     }
+//   });
 
 const parseTimeToDate = (date, time) => {
     // date format DD/MM/YYYY and time format HH:MM
