@@ -505,20 +505,20 @@ const search = async (req, res) => {
 const search2 = async (req, res) => {
     const { query } = req.query;
 
+    // Check if query is provided
     if (!query) {
         return res.status(400).json({ error: 'Query parameter is required' });
     }
-    console.log(query)
 
     try {
-        // Perform the aggregation to look up category details
+        // Find events by query and populate category details
         const events = await Event.aggregate([
             {
                 $lookup: {
-                    from: Category.collection.name, // Reference to the categories collection
-                    localField: 'category', // Field from the events collection
-                    foreignField: '_id', // Field from the categories collection
-                    as: 'categoryDetails' // Name of the new array field to add to the output documents
+                    from: Category.collection.name,
+                    localField: 'category',
+                    foreignField: '_id',
+                    as: 'categoryDetails' // Attaching category details
                 }
             },
             {
@@ -526,43 +526,44 @@ const search2 = async (req, res) => {
                     $or: [
                         { title: { $regex: query, $options: 'i' } },
                         { description: { $regex: query, $options: 'i' } },
-                        { 'categoryDetails.name': { $regex: query, $options: 'i' } } // Match category names
+                        { 'categoryDetails.name': { $regex: query, $options: 'i' } } // Searching within category names
                     ]
                 }
             }
         ]);
 
         if (events.length === 0) {
-            return res.status(404).json({ error: 'No events found' });
+            return res.status(200).json({ data : [] });
         }
 
-        // Map events to the desired format
-        let mappedEvents = events;
-
         // Extract user IDs from the events
-        const userIds = mappedEvents.map(event => event.user_id);
+        const userIds = events.map(event => event.user_id);
 
-        // Fetch user details based on the user IDs
-        const users = await userModel.find({ _id: { $in: userIds } }, 'fullname email profile_picture');
+        // Fetch users for the events
+        const users = await userModel.find(
+            { _id: { $in: userIds } },
+            'fullname email profile_picture'
+        );
 
-        // Create a lookup object for users for quick access
-        const userMap = users.reduce((acc, user) => {
-            acc[user._id] = user; // Create a map with user IDs as keys
-            return acc;
+        // Create a user lookup map for quick access
+        const userMap = users.reduce((map, user) => {
+            map[user._id] = user;
+            return map;
         }, {});
 
-        // Attach user details to the mapped events
-        const eventsWithUserDetails = mappedEvents.map(event => {
-            const user_id = userMap[event.user_id]; // Get user details from the map
-            return { ...event, user_id }; // Attach user details to each event
-        });
-        res.status(200).json({ data: mapEvents(eventsWithUserDetails) });
+        // Map user and category details into each event
+        const eventsWithDetails = events.map(event => ({
+            ...event,
+            user_id: userMap[event.user_id], // Attach user details
+            category: event.categoryDetails, // Attach category details (populated)
+        }));
+
+        res.status(200).json({ data: mapEvents(eventsWithDetails) });
     } catch (error) {
         console.error('Error fetching events:', error);
         res.status(500).json({ error: 'Server error' });
     }
 };
-
 
 module.exports = {
     updateEvent,
