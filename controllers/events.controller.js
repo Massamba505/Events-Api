@@ -379,8 +379,7 @@ const createEvent = async (req, res) => {
             maxAttendees = null, category,food_stalls = false
         } = req.body;
     
-        const images = req.files; // Assuming you're using multer for file uploads
-        console.log(images,title, description, location, date, startTime, endTime, isPaid, ticketPrice, maxAttendees, category,food_stalls)
+        const images = req.files;
     
         // Validate required fields
         if (!title || !description || !location || !date || !startTime || !endTime || typeof isPaid === 'undefined') {
@@ -388,9 +387,8 @@ const createEvent = async (req, res) => {
         }
   
         // Validate ticket price for paid events
-        // Validate ticket price for paid events
         let price = 0;
-        if (isPaid) {
+        if (isPaid == true) {
             price = parseFloat(ticketPrice);
 
             if (isNaN(price) || price <= 0) {
