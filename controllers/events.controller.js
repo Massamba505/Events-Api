@@ -540,9 +540,9 @@ const createEvent = async (req, res) => {
         }
 
         // Validate if images exist
-        if (!images || images.length === 0) {
-            return res.status(400).json({ error: 'Please upload at least one image.' });
-        }
+       // if (!images || images.length === 0) {
+      //      return res.status(400).json({ error: 'Please upload at least one image.' });
+       // }
 
         // Generate a new event_id
         const lastEvent = await Event.findOne().sort({ event_id: -1 }).exec();
