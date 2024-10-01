@@ -624,6 +624,85 @@ const createEvent = async (req, res) => {
     }
 };
 
+const createEventNoImage = async (req, res) => {
+    try {
+        const {
+            title, description, location, date, startTime, endTime, isPaid, ticketPrice,
+            maxAttendees = null, category, food_stalls = false
+        } = req.body;
+
+
+        // Validate required fields
+        if (!title || !description || !location || !date || !startTime || !endTime || typeof isPaid === 'undefined') {
+            return res.status(400).json({ error: 'Please fill in all required fields.' });
+        }
+
+        // Cast strings to booleans
+        const isPaidBoolean = isPaid === 'true' || isPaid === true;  // Convert string "true"/"false" to boolean
+        const foodStallsBoolean = food_stalls === 'true' || food_stalls === true;
+
+        // Validate ticket price for paid events
+        let price = 0;
+        if (isPaidBoolean) {
+            price = parseFloat(ticketPrice);
+
+            if (isNaN(price) || price <= 0) {
+                return res.status(400).json({ error: 'Please provide a valid ticket price greater than zero for paid events.' });
+            }
+        }
+
+        // Generate a new event_id
+        const lastEvent = await Event.findOne().sort({ event_id: -1 }).exec();
+        const newEventId = lastEvent ? lastEvent.event_id + 1 : 1000;
+
+        // Ensure category is an array of ObjectId
+        const categoryIds = Array.isArray(category) ? category : JSON.parse(category);
+
+        // Create and save the new event
+        const newEvent = new Event({
+            user_id: req.user._id,
+            event_id: newEventId,
+            title,
+            description,
+            location,
+            date,
+            start_time: startTime,
+            end_time: endTime,
+            is_paid: isPaidBoolean,
+            ticket_price: isPaidBoolean ? price : 0,
+            max_attendees: maxAttendees,
+            category: categoryIds,
+            food_stalls: foodStallsBoolean
+        });
+
+        await newEvent.save(); // Save to the database
+
+        res.status(201).json({
+            message: 'Event created successfully',
+            event: {
+                id: newEvent._id.toString(),
+                event_id: newEvent.event_id,
+                eventAuthor: newEvent.user_id.fullname,
+                title: newEvent.title,
+                description: newEvent.description,
+                location: newEvent.location,
+                date: newEvent.date,
+                startTime: newEvent.start_time,
+                endTime: newEvent.end_time,
+                isPaid: newEvent.is_paid,
+                ticketPrice: newEvent.ticket_price,
+                maxAttendees: newEvent.max_attendees,
+                currentAttendees: newEvent.current_attendees,
+                category: newEvent.category
+            }
+        });
+
+    } catch (error) {
+        console.error('Error creating event:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
 
 const search = async (req, res) => {
     const { query } = req.query; // Extract the search query from the query parameters
@@ -716,6 +795,7 @@ const search2 = async (req, res) => {
 module.exports = {
     updateEvent,
     createEvent,
+    createEventNoImage,
     allEvents,
     allUpcomingEvents,
     allInProgressEvents,
