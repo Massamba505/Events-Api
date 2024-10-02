@@ -3,8 +3,6 @@ const { buyTicket, confirmPayment, cancelTicket, getTicket, requestRefund, getAl
 const {authenticate} = require('../middlewares/protect.middleware');
 const router = express.Router();
 
-// Ticket routes
-
 router.post('/buy', authenticate, buyTicket);
 
 router.post('/confirm-payment', authenticate, confirmPayment);

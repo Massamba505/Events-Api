@@ -3,13 +3,11 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const QRCode = require('qrcode');
 const Event = require("../models/event.model");
 
-// Buy/Reserve Ticket Endpoint
 const buyTicket = async (req, res) => {
   const { eventId, userId = req.user._id, ticketType, price, eventDate, attendeeInfo } = req.body;
 
   try {
     let paymentIntent = null;
-    // If it's not RSVP, create a payment intent
     if (ticketType !== 'RSVP') {
       paymentIntent = await stripe.paymentIntents.create({
         amount: Math.round(price * 100),
@@ -28,16 +26,14 @@ const buyTicket = async (req, res) => {
       user_id: userId,
       ticket_type: ticketType,
       price: ticketType === 'RSVP' ? 0 : price, // No price for RSVP
-      stripe_payment_intent_id: paymentIntent ? paymentIntent.id : null, // No payment intent for RSVP
+      stripe_payment_intent_id: paymentIntent ? paymentIntent.id : null,
       attendee_info: attendeeInfo,
       event_date: eventDate,
-      payment_status: ticketType === 'RSVP' ? 'Paid' : 'Pending', // RSVP is considered paid immediately
+      payment_status: ticketType === 'RSVP' ? 'Paid' : 'Pending',
     });
 
-    // Save the ticket in the database
     await ticket.save();
 
-    // Response for RSVP or paid ticket
     if (ticketType === 'RSVP') {
       const qrCodeData = `Ticket ID: ${ticket._id}, Event ID: ${event._id}`;
       const qrCode = await QRCode.toDataURL(qrCodeData);
@@ -52,7 +48,6 @@ const buyTicket = async (req, res) => {
       });
     }
 
-    // Response for non-RSVP (payment required)
     return res.status(200).json({
       success: true,
       ticketId: ticket._id,
@@ -64,7 +59,6 @@ const buyTicket = async (req, res) => {
   }
 };
 
-// Confirm Payment and Generate QR Code for Paid Tickets
 const confirmPayment = async (req, res) => {
   const { ticketId, paymentIntentId } = req.body;
 
@@ -94,7 +88,6 @@ const confirmPayment = async (req, res) => {
   }
 };
 
-// Scan and Validate Ticket (Only by Event Organizer)
 const scanTicket = async (req, res) => {
   const { ticketId } = req.params;
   const userId = req.user._id; // Organizer
@@ -110,7 +103,6 @@ const scanTicket = async (req, res) => {
       return res.status(404).json({ error: 'Event not found' });
     }
 
-    // Only allow event organizer to scan tickets
     if (event.organizer_id.toString() !== userId.toString()) {
       return res.status(403).json({ error: 'Unauthorized - Only event organizer can scan tickets' });
     }
@@ -119,7 +111,6 @@ const scanTicket = async (req, res) => {
       return res.status(400).json({ error: 'Ticket has already been used' });
     }
 
-    // Mark the ticket as used
     ticket.used = new Date();
     await ticket.save();
 
@@ -130,7 +121,6 @@ const scanTicket = async (req, res) => {
   }
 };
 
-// Cancel Ticket
 const cancelTicket = async (req, res) => {
   const { ticketId } = req.params;
 
@@ -150,7 +140,6 @@ const cancelTicket = async (req, res) => {
   }
 };
 
-// Request Refund
 const requestRefund = async (req, res) => {
   const { ticketId } = req.params;
 
@@ -174,7 +163,6 @@ const requestRefund = async (req, res) => {
   }
 };
 
-// Get Ticket Details
 const getTicket = async (req, res) => {
   const { ticketId } = req.params;
 
@@ -191,7 +179,6 @@ const getTicket = async (req, res) => {
   }
 };
 
-// Get All Tickets for a User
 const getAllTickets = async (req, res) => {
   const { userId } = req.params;
 
