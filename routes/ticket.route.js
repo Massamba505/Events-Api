@@ -1,7 +1,7 @@
 const express = require('express');
-const { buyTicket, confirmPayment, cancelTicket, getTicket, requestRefund, getAllTickets } = require('../controllers/ticket.controller');
-const { authenticate } = require('../middlewares/protect.middleware');
 const router = express.Router();
+const { buyTicket, confirmPayment, cancelTicket, requestRefund, getTicket, getAllTickets } = require('../controllers/ticket.controller');
+const { authenticate } = require('../middlewares/protect.middleware');
 
 // Ticket routes
 

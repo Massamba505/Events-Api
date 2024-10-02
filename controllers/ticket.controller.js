@@ -6,6 +6,27 @@ const Event = require("../models/event.model");
 const buyTicket = async (req, res) => {
   const { eventId, userId = req.user._id, ticketType, price, eventDate, attendeeInfo } = req.body;
 
+  // Basic validation
+  if (!eventId || typeof eventId !== 'string') {
+    return res.status(400).json({ error: 'Invalid or missing eventId' });
+  }
+
+  if (!ticketType || (ticketType !== 'RSVP' && ticketType !== 'Paid')) {
+    return res.status(400).json({ error: 'Invalid or missing ticketType' });
+  }
+
+  if (ticketType !== 'RSVP' && (!price || typeof price !== 'number' || price <= 0)) {
+    return res.status(400).json({ error: 'Invalid or missing price for paid tickets' });
+  }
+
+  if (!eventDate || isNaN(new Date(eventDate))) {
+    return res.status(400).json({ error: 'Invalid or missing eventDate' });
+  }
+
+  if (!attendeeInfo || typeof attendeeInfo !== 'object') {
+    return res.status(400).json({ error: 'Invalid or missing attendeeInfo' });
+  }
+
   try {
     let paymentIntent = null;
     if (ticketType !== 'RSVP') {
@@ -18,14 +39,14 @@ const buyTicket = async (req, res) => {
 
     const event = await Event.findOne({ event_id: eventId });
     if (!event) {
-      return res.status(404).json({ error: "Event not found" });
+      return res.status(404).json({ error: 'Event not found' });
     }
 
     const ticket = new Ticket({
       event_id: event._id,
       user_id: userId,
       ticket_type: ticketType,
-      price: ticketType === 'RSVP' ? 0 : price, // No price for RSVP
+      price: ticketType === 'RSVP' ? 0 : price,
       stripe_payment_intent_id: paymentIntent ? paymentIntent.id : null,
       attendee_info: attendeeInfo,
       event_date: eventDate,
@@ -43,7 +64,7 @@ const buyTicket = async (req, res) => {
 
       return res.status(200).json({
         success: true,
-        message: "RSVP successful",
+        message: 'RSVP successful',
         ticket,
       });
     }
@@ -61,6 +82,15 @@ const buyTicket = async (req, res) => {
 
 const confirmPayment = async (req, res) => {
   const { ticketId, paymentIntentId } = req.body;
+
+  // Basic validation
+  if (!ticketId || typeof ticketId !== 'string') {
+    return res.status(400).json({ error: 'Invalid or missing ticketId' });
+  }
+
+  if (!paymentIntentId || typeof paymentIntentId !== 'string') {
+    return res.status(400).json({ error: 'Invalid or missing paymentIntentId' });
+  }
 
   try {
     const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
@@ -91,6 +121,11 @@ const confirmPayment = async (req, res) => {
 const scanTicket = async (req, res) => {
   const { ticketId } = req.params;
   const userId = req.user._id; // Organizer
+
+  // Basic validation
+  if (!ticketId || typeof ticketId !== 'string') {
+    return res.status(400).json({ error: 'Invalid or missing ticketId' });
+  }
 
   try {
     const ticket = await Ticket.findById(ticketId).populate('event_id');
@@ -124,6 +159,11 @@ const scanTicket = async (req, res) => {
 const cancelTicket = async (req, res) => {
   const { ticketId } = req.params;
 
+  // Basic validation
+  if (!ticketId || typeof ticketId !== 'string') {
+    return res.status(400).json({ error: 'Invalid or missing ticketId' });
+  }
+
   try {
     const ticket = await Ticket.findById(ticketId);
     if (!ticket) {
@@ -142,6 +182,11 @@ const cancelTicket = async (req, res) => {
 
 const requestRefund = async (req, res) => {
   const { ticketId } = req.params;
+
+  // Basic validation
+  if (!ticketId || typeof ticketId !== 'string') {
+    return res.status(400).json({ error: 'Invalid or missing ticketId' });
+  }
 
   try {
     const ticket = await Ticket.findById(ticketId);
@@ -166,6 +211,11 @@ const requestRefund = async (req, res) => {
 const getTicket = async (req, res) => {
   const { ticketId } = req.params;
 
+  // Basic validation
+  if (!ticketId || typeof ticketId !== 'string') {
+    return res.status(400).json({ error: 'Invalid or missing ticketId' });
+  }
+
   try {
     const ticket = await Ticket.findById(ticketId).populate('event_id user_id');
     if (!ticket) {
@@ -181,6 +231,11 @@ const getTicket = async (req, res) => {
 
 const getAllTickets = async (req, res) => {
   const { userId } = req.params;
+
+  // Basic validation
+  if (!userId || typeof userId !== 'string') {
+    return res.status(400).json({ error: 'Invalid or missing userId' });
+  }
 
   try {
     const tickets = await Ticket.find({ user_id: userId }).populate('event_id');
@@ -198,5 +253,5 @@ module.exports = {
   cancelTicket,
   requestRefund,
   getTicket,
-  getAllTickets
+  getAllTickets,
 };
