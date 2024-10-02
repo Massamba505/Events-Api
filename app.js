@@ -8,7 +8,6 @@ const indexRouter = require('./routes/index');
 const authRouter = require('./routes/auth.route');
 const userRouter = require('./routes/user.route');
 const eventRouter = require('./routes/event.route');
-const ticketRouter = require('./routes/ticket.route');
 const categoryRoutes = require('./routes/category.route');
 
 const app = express();
@@ -32,7 +31,6 @@ app.use('/api', indexRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/user', userRouter);
 app.use('/api/events', eventRouter);
-app.use('/api/tickets', ticketRouter);
 app.use('/api/category', categoryRoutes);
 
 
