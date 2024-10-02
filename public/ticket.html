@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ticketing API Endpoints</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+  <div class="container mt-5">
+    <h1 class="text-center mb-4">Ticketing API Endpoints</h1>
+    <div class="accordion" id="apiAccordion">
+
+      <!-- Buy Ticket -->
+      <div class="accordion-item">
+        <h2 class="accordion-header" id="headingBuy">
+          <button class="accordion-button bg-primary text-white" type="button" data-bs-toggle="collapse" data-bs-target="#collapseBuy" aria-expanded="true" aria-controls="collapseBuy">
+            POST /api/tickets/buy - Buy a Ticket
+          </button>
+        </h2>
+        <div id="collapseBuy" class="accordion-collapse collapse show" aria-labelledby="headingBuy" data-bs-parent="#apiAccordion">
+          <div class="accordion-body">
+            <h5>Description:</h5>
+            <p>This endpoint allows a user to buy a ticket for an event. The system generates a payment intent if the ticket type is not RSVP.</p>
+            <h5>Request:</h5>
+            <pre>
+POST /api/tickets/buy
+Authorization: Bearer <TOKEN>
+
+{
+  "eventId": "123",
+  "ticketType": "General Admission",
+  "price": 50,
+  "eventDate": "2024-10-02T14:00:00Z",
+  "attendeeInfo": {
+    "name": "John Doe",
+    "email": "john@example.com"
+  }
+}
+            </pre>
+            <h5>Response (Success):</h5>
+            <pre>
+{
+  "success": true,
+  "ticketId": "64f90a8e50bcd768b6d9a3d8",
+  "clientSecret": "<STRIPE_CLIENT_SECRET>"
+}
+            </pre>
+            <h5>Response (RSVP Success):</h5>
+            <pre>
+{
+  "success": true,
+  "message": "RSVP successful",
+  "ticket": {
+    "_id": "64f90a8e50bcd768b6d9a3d8",
+    "event_id": "64f90a6e50bcd768b6d9a3d7",
+    "ticket_type": "RSVP",
+    "qr_code": "<QR_CODE_DATA>"
+  }
+}
+            </pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- Confirm Payment -->
+      <div class="accordion-item">
+        <h2 class="accordion-header" id="headingConfirm">
+          <button class="accordion-button bg-secondary text-white" type="button" data-bs-toggle="collapse" data-bs-target="#collapseConfirm" aria-expanded="false" aria-controls="collapseConfirm">
+            POST /api/tickets/confirm-payment - Confirm Ticket Payment
+          </button>
+        </h2>
+        <div id="collapseConfirm" class="accordion-collapse collapse" aria-labelledby="headingConfirm" data-bs-parent="#apiAccordion">
+          <div class="accordion-body">
+            <h5>Description:</h5>
+            <p>This endpoint confirms a ticket payment and generates a QR code for the ticket.</p>
+            <h5>Request:</h5>
+            <pre>
+POST /api/tickets/confirm-payment
+Authorization: Bearer <TOKEN>
+
+{
+  "ticketId": "64f90a8e50bcd768b6d9a3d8",
+  "paymentIntentId": "pi_1JYZ2KHcXIBsG1"
+}
+            </pre>
+            <h5>Response (Success):</h5>
+            <pre>
+{
+  "message": "Payment confirmed and QR code generated",
+  "ticket": {
+    "_id": "64f90a8e50bcd768b6d9a3d8",
+    "event_id": "64f90a6e50bcd768b6d9a3d7",
+    "payment_status": "Paid",
+    "qr_code": "<QR_CODE_DATA>"
+  }
+}
+            </pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cancel Ticket -->
+      <div class="accordion-item">
+        <h2 class="accordion-header" id="headingCancel">
+          <button class="accordion-button bg-success text-white" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCancel" aria-expanded="false" aria-controls="collapseCancel">
+            POST /api/tickets/cancel/:ticketId - Cancel a Ticket
+          </button>
+        </h2>
+        <div id="collapseCancel" class="accordion-collapse collapse" aria-labelledby="headingCancel" data-bs-parent="#apiAccordion">
+          <div class="accordion-body">
+            <h5>Description:</h5>
+            <p>This endpoint allows a user to cancel a ticket purchase.</p>
+            <h5>Request:</h5>
+            <pre>
+POST /api/tickets/cancel/:ticketId
+Authorization: Bearer <TOKEN>
+            </pre>
+            <h5>Response (Success):</h5>
+            <pre>
+{
+  "message": "Ticket cancelled successfully"
+}
+            </pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- Request Refund -->
+      <div class="accordion-item">
+        <h2 class="accordion-header" id="headingRefund">
+          <button class="accordion-button bg-danger text-white" type="button" data-bs-toggle="collapse" data-bs-target="#collapseRefund" aria-expanded="false" aria-controls="collapseRefund">
+            POST /api/tickets/refund/:ticketId - Request Refund
+          </button>
+        </h2>
+        <div id="collapseRefund" class="accordion-collapse collapse" aria-labelledby="headingRefund" data-bs-parent="#apiAccordion">
+          <div class="accordion-body">
+            <h5>Description:</h5>
+            <p>This endpoint allows a user to request a refund for a purchased ticket.</p>
+            <h5>Request:</h5>
+            <pre>
+POST /api/tickets/refund/:ticketId
+Authorization: Bearer <TOKEN>
+            </pre>
+            <h5>Response (Success):</h5>
+            <pre>
+{
+  "message": "Refund request submitted"
+}
+            </pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- Get Ticket Details -->
+      <div class="accordion-item">
+        <h2 class="accordion-header" id="headingGetTicket">
+          <button class="accordion-button bg-warning text-white" type="button" data-bs-toggle="collapse" data-bs-target="#collapseGetTicket" aria-expanded="false" aria-controls="collapseGetTicket">
+            GET /api/tickets/:ticketId - Get Ticket Details
+          </button>
+        </h2>
+        <div id="collapseGetTicket" class="accordion-collapse collapse" aria-labelledby="headingGetTicket" data-bs-parent="#apiAccordion">
+          <div class="accordion-body">
+            <h5>Description:</h5>
+            <p>This endpoint retrieves the details of a ticket by its ID.</p>
+            <h5>Request:</h5>
+            <pre>
+GET /api/tickets/:ticketId
+Authorization: Bearer <TOKEN>
+            </pre>
+            <h5>Response (Success):</h5>
+            <pre>
+{
+  "_id": "64f90a8e50bcd768b6d9a3d8",
+  "event_id": "64f90a6e50bcd768b6d9a3d7",
+  "user_id": "64f90b3e50bcd768b6d9a3da",
+  "ticket_type": "General Admission",
+  "price": 50,
+  "qr_code": "<QR_CODE_DATA>",
+  "event_date": "2024-10-02T14:00:00Z"
+}
+            </pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- Get All Tickets for a User -->
+      <div class="accordion-item">
+        <h2 class="accordion-header" id="headingGetAllTickets">
+          <button class="accordion-button bg-info text-white" type="button" data-bs-toggle="collapse" data-bs-target="#collapseGetAllTickets" aria-expanded="false" aria-controls="collapseGetAllTickets">
+            GET /api/tickets/user/:userId - Get All Tickets for a User
+          </button>
+        </h2>
+        <div id="collapseGetAllTickets" class="accordion-collapse collapse" aria-labelledby="headingGetAllTickets" data-bs-parent="#apiAccordion">
+          <div class="accordion-body">
+            <h5>Description:</h5>
+            <p>This endpoint retrieves all tickets purchased by a user.</p>
+            <h5>Request:</h5>
+            <pre>
+GET /api/tickets/user/:userId
+Authorization: Bearer <TOKEN>
+            </pre>
+            <h5>Response (Success):</h5>
+            <pre>
+[
+  {
+    "_id": "64f90a8e50bcd768b6d9a3d8",
+    "event_id": "64f90a6e50bcd768b6d9a3d7",
+    "user_id": "64f90b3e50bcd768b6d9a3da",
+    "ticket_type": "General Admission",
+    "price": 50,
+    "qr_code": "<QR_CODE_DATA>",
+    "event_date": "2024-10-02T14:00:00Z"
+  },
+  {
+    "_id": "64f90b0e50bcd768b6d9a3d9",
+    "event_id": "64f90a6e50bcd768b6d9a3d7",
+    "user_id": "64f90b3e50bcd768b6d9a3da",
+    "ticket_type": "VIP",
+    "price": 100,
+    "qr_code": "<QR_CODE_DATA>",
+    "event_date": "2024-10-02T14:00:00Z"
+  }
+]
+            </pre>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,117 +1,215 @@
-const TicketRegistration = require('../models/ticket.model');
+const Ticket = require('../models/ticket.model');
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const QRCode = require('qrcode');
-const CryptoJS = require('crypto-js');
-const User = require("../models/user.model");
+const Event = require("../models/event.model");
 
+// Buy/Reserve Ticket Endpoint
+const buyTicket = async (req, res) => {
+  const { eventId, userId = req.user._id, ticketType, price, eventDate, attendeeInfo } = req.body;
 
-const parseTimeToDate = (date, time) => {
-    // date format DD/MM/YYYY and time format HH:MM
-    const [hours, minutes] = time.split(':').map(Number);
-    const [DD, MM, YYYY] = date.split('/').map(Number);
-    return new Date(YYYY, MM - 1, DD, hours, minutes);
+  try {
+    let paymentIntent = null;
+    // If it's not RSVP, create a payment intent
+    if (ticketType !== 'RSVP') {
+      paymentIntent = await stripe.paymentIntents.create({
+        amount: Math.round(price * 100),
+        currency: 'usd',
+        payment_method_types: ['card'],
+      });
+    }
+
+    const event = await Event.findOne({ event_id: eventId });
+    if (!event) {
+      return res.status(404).json({ error: "Event not found" });
+    }
+
+    const ticket = new Ticket({
+      event_id: event._id,
+      user_id: userId,
+      ticket_type: ticketType,
+      price: ticketType === 'RSVP' ? 0 : price, // No price for RSVP
+      stripe_payment_intent_id: paymentIntent ? paymentIntent.id : null, // No payment intent for RSVP
+      attendee_info: attendeeInfo,
+      event_date: eventDate,
+      payment_status: ticketType === 'RSVP' ? 'Paid' : 'Pending', // RSVP is considered paid immediately
+    });
+
+    // Save the ticket in the database
+    await ticket.save();
+
+    // Response for RSVP or paid ticket
+    if (ticketType === 'RSVP') {
+      const qrCodeData = `Ticket ID: ${ticket._id}, Event ID: ${event._id}`;
+      const qrCode = await QRCode.toDataURL(qrCodeData);
+
+      ticket.qr_code = qrCode;
+      await ticket.save();
+
+      return res.status(200).json({
+        success: true,
+        message: "RSVP successful",
+        ticket,
+      });
+    }
+
+    // Response for non-RSVP (payment required)
+    return res.status(200).json({
+      success: true,
+      ticketId: ticket._id,
+      clientSecret: paymentIntent.client_secret,
+    });
+  } catch (error) {
+    console.error('Error buying ticket:', error);
+    res.status(500).json({ error: 'Failed to process ticket purchase' });
+  }
 };
 
-const TicketReg = async(req, res) => {
-    try {
-        const user_id = req.user._id;
-        const { event_id, registration_type, ticket_type } = req.body;
+// Confirm Payment and Generate QR Code for Paid Tickets
+const confirmPayment = async (req, res) => {
+  const { ticketId, paymentIntentId } = req.body;
 
-        // Fetch event and user details
-        const event = await Event.findById(event_id);
-        const user = await User.findById(user_id);
+  try {
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
 
-        if (!event) {
-            return res.status(404).json({ message: 'Event not found' });
-        }
+    if (paymentIntent.status === 'succeeded') {
+      const ticket = await Ticket.findById(ticketId);
 
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
-        }
+      const qrCodeData = `Ticket ID: ${ticketId}, Event ID: ${ticket.event_id}`;
+      const qrCode = await QRCode.toDataURL(qrCodeData);
 
-        let ticketNumber = null;
-        if (registration_type === 'ticket') {
-            ticketNumber = CryptoJS.lib.WordArray.random(4).toString(CryptoJS.enc.Hex).toUpperCase();
-        }
+      ticket.payment_status = 'Paid';
+      ticket.qr_code = qrCode;
+      await ticket.save();
 
-        let qrCode = null;
-        if (ticketNumber) {
-            qrCode = await QRCode.toDataURL(ticketNumber);
-        }
-
-        const registration = new TicketRegistration({
-            event_id,
-            user_id,
-            registration_type,
-            ticket_number: ticketNumber,
-            status: 'issued',
-            price: event.is_paid ? event.ticket_price : null,
-            ticket_type: ticket_type || null,
-            qr_code: qrCode,
-            event_date: parseTimeToDate(event.date,event.start_time),
-            expiration_date: parseTimeToDate(event.date,event.end_time)
-        });
-
-        await registration.save();
-
-        event.current_attendees += 1;
-        await event.save();
-
-        const registrationDetails = await TicketRegistration.findById(registration._id)
-            .populate('event_id')
-            .populate({
-              path: 'user_id',
-              select: 'fullname'
-            });
-
-        return res.status(201).json({
-            message: 'Registration successful',
-            registration: registrationDetails
-        });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Server error' });
+      res.status(200).json({
+        message: 'Payment confirmed and QR code generated',
+        ticket,
+      });
+    } else {
+      res.status(400).json({ error: 'Payment was not successful' });
     }
-}
+  } catch (error) {
+    console.error('Error confirming payment:', error);
+    res.status(500).json({ error: 'Failed to confirm payment' });
+  }
+};
 
-const AllTicketAndRegistration = async(req,res)=>{
-    try {
-        const user_id = req.user._id;
+// Scan and Validate Ticket (Only by Event Organizer)
+const scanTicket = async (req, res) => {
+  const { ticketId } = req.params;
+  const userId = req.user._id; // Organizer
 
-        const registrations = await TicketRegistration.find({ user_id })
-        .populate('event_id')
-        .populate('user_id', 'fullname');
-
-        if (registrations.length === 0) {
-            return res.status(200).json({ message: "No events registered." });
-        }
-
-        const eventsSummary = registrations.map(reg => ({
-            fullname:reg.user_id.fullname,
-            eventTitle: reg.event_id.title,
-            eventDescription: reg.event_id.description,
-            eventLocation: reg.event_id.location,
-            eventStartTime: reg.event_id.start_time,
-            eventEndTime: reg.event_id.end_time,
-            registrationType: reg.registration_type,
-            ticketNumber:reg.ticket_number,
-            status: reg.status,
-            ticketType: reg.ticket_type,
-            eventDate: reg.event_date,
-            price: reg.price ? reg.price.toString() : 'Free',
-            qrCode: reg.qr_code,
-            refundStatus: reg.refund_status,
-            expirationDate: reg.expiration_date,
-            registrationTime: reg.registration_time
-        }));
-
-        res.status(200).json(eventsSummary);
-    } catch (error) {
-        console.error('Error in fetching registered events: ', error.message);
-        res.status(500).json({ error: "Internal Server Error" });
+  try {
+    const ticket = await Ticket.findById(ticketId).populate('event_id');
+    if (!ticket) {
+      return res.status(404).json({ error: 'Ticket not found' });
     }
-}
+
+    const event = await Event.findById(ticket.event_id);
+    if (!event) {
+      return res.status(404).json({ error: 'Event not found' });
+    }
+
+    // Only allow event organizer to scan tickets
+    if (event.organizer_id.toString() !== userId.toString()) {
+      return res.status(403).json({ error: 'Unauthorized - Only event organizer can scan tickets' });
+    }
+
+    if (ticket.used) {
+      return res.status(400).json({ error: 'Ticket has already been used' });
+    }
+
+    // Mark the ticket as used
+    ticket.used = new Date();
+    await ticket.save();
+
+    res.status(200).json({ message: 'Ticket scanned successfully', ticket });
+  } catch (error) {
+    console.error('Error scanning ticket:', error);
+    res.status(500).json({ error: 'Failed to scan ticket' });
+  }
+};
+
+// Cancel Ticket
+const cancelTicket = async (req, res) => {
+  const { ticketId } = req.params;
+
+  try {
+    const ticket = await Ticket.findById(ticketId);
+    if (!ticket) {
+      return res.status(404).json({ error: 'Ticket not found' });
+    }
+
+    ticket.payment_status = 'Cancelled';
+    await ticket.save();
+
+    res.status(200).json({ message: 'Ticket cancelled successfully' });
+  } catch (error) {
+    console.error('Error cancelling ticket:', error);
+    res.status(500).json({ error: 'Failed to cancel ticket' });
+  }
+};
+
+// Request Refund
+const requestRefund = async (req, res) => {
+  const { ticketId } = req.params;
+
+  try {
+    const ticket = await Ticket.findById(ticketId);
+    if (!ticket) {
+      return res.status(404).json({ error: 'Ticket not found' });
+    }
+
+    if (ticket.payment_status !== 'Paid') {
+      return res.status(400).json({ error: 'Refund can only be requested for paid tickets' });
+    }
+
+    ticket.refund_status = 'Requested';
+    await ticket.save();
+
+    res.status(200).json({ message: 'Refund request submitted' });
+  } catch (error) {
+    console.error('Error requesting refund:', error);
+    res.status(500).json({ error: 'Failed to request refund' });
+  }
+};
+
+// Get Ticket Details
+const getTicket = async (req, res) => {
+  const { ticketId } = req.params;
+
+  try {
+    const ticket = await Ticket.findById(ticketId).populate('event_id user_id');
+    if (!ticket) {
+      return res.status(404).json({ error: 'Ticket not found' });
+    }
+
+    res.status(200).json(ticket);
+  } catch (error) {
+    console.error('Error fetching ticket:', error);
+    res.status(500).json({ error: 'Failed to fetch ticket' });
+  }
+};
+
+// Get All Tickets for a User
+const getAllTickets = async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const tickets = await Ticket.find({ user_id: userId }).populate('event_id');
+    res.status(200).json(tickets);
+  } catch (error) {
+    console.error('Error fetching user tickets:', error);
+    res.status(500).json({ error: 'Failed to fetch tickets' });
+  }
+};
 
 module.exports = {
-    TicketReg,
-    AllTicketAndRegistration
+  buyTicket,
+  confirmPayment,
+  scanTicket,
+  cancelTicket,
+  requestRefund,
+  getTicket,
+  getAllTickets
 };

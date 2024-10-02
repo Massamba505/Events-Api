@@ -12,50 +12,41 @@ const ticketSchema = new Schema({
     ref: 'User',
     required: true
   },
-  registration_type: {
+  ticket_type: {
     type: String,
     enum: ['RSVP', 'General Admission', 'VIP', 'Early Bird'],
     required: true
   },
-  ticket_number: {
-    type: String,
-    unique: true,
-    sparse: true
-  },
-  issue_date: {
-    type: Date,
-    default: Date.now
-  },
-  status: {
-    type: String,
-    enum: ['issued', 'used', 'cancelled'],
-    default: 'issued'
-  },
   price: {
-    type: Schema.Types.Decimal128,
-    default: null
+    type: Number,
+    required: true
+  },
+  stripe_payment_intent_id: {
+    type: String,
+    required: true
+  },
+  payment_status: {
+    type: String,
+    enum: ['Pending', 'Paid', 'Cancelled'],
+    default: 'Pending'
   },
   qr_code: {
-    type: String,
+    type: String, // URL or base64 string for the QR code
     default: null
   },
   event_date: {
     type: Date,
-    default: null
+    required: true
   },
   refund_status: {
     type: String,
-    enum: ['not requested', 'pending', 'approved', 'rejected'],
-    default: 'not requested'
+    enum: ['Not Requested', 'Requested', 'Refunded'],
+    default: 'Not Requested'
   },
-  expiration_date: {
+  used: {
     type: Date,
+    default: null
   },
-  registration_time: {
-    type: Date,
-    default: Date.now
-  }
 });
 
-// Export the combined Ticket model
 module.exports = mongoose.model('Ticket', ticketSchema);
