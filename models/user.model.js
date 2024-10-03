@@ -14,6 +14,10 @@ const userSchema = new Schema({
     password: {
         type: String,
     },
+    about:{ 
+        type: String, 
+        default: ''
+    },
     authId: {
         type: String,
     },
@@ -27,7 +31,13 @@ const userSchema = new Schema({
         default: '' 
     },
 
-    get_notified: {
+    push_notifications: { 
+        type: String, 
+        enum: ['everything', 'nothing', 'email'],
+        default: 'everything' 
+    },
+
+    comments: {
       type: Boolean, 
       default: true 
     },
