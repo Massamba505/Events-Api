@@ -32,7 +32,7 @@ app.use('/api', indexRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/user', userRouter);
 app.use('/api/events', eventRouter);
-app.use('/api/ticket', ticketRouter);
+app.use('/api/tickets', ticketRouter);
 app.use('/api/category', categoryRoutes);
 
 

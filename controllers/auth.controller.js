@@ -16,9 +16,11 @@ const login = async (req, res) => {
             let user = await User.findOne({ email });
             
             if (!user) {
+                const profile_picture = `https://eu.ui-avatars.com/api/?name=${name.split(" ")[0]}+${name.split(" ")[1]}&size=250`;
                 user = new User({
                     fullname: name,
                     email,
+                    profile_picture,
                     role: "user",
                 });
                 await user.save();
@@ -31,6 +33,7 @@ const login = async (req, res) => {
                 token,
                 fullname:user.fullname,
                 email:user.email,
+                profile_picture:user.profile_picture,
                 role: user.role
             });
         }
@@ -91,9 +94,11 @@ const signup = async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, salt);
 
         // Create new user
+        const profile_picture = `https://eu.ui-avatars.com/api/?name=${fullname.split(" ")[0]}+${fullname.split(" ")[1]}&size=250`;
         const newUser = new User({
             fullname,
             email,
+            profile_picture,
             password: hashedPassword,
             role
         });
@@ -107,6 +112,7 @@ const signup = async (req, res) => {
             token,
             fullname,
             email,
+            profile_picture,
             role: newUser.role
         });
 

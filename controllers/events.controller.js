@@ -86,6 +86,19 @@ const allEvents = async (req, res) => {
         res.status(500).json({error: 'Internal Server Error' });
     }
 };
+const MyEvents = async (req, res) => {
+    const userId = req.user._id; // Assume this comes from authenticated user
+
+    console.log('Fetching events for user ID:', userId);
+    
+    try {
+        const events = await Event.find({ user_id: userId }); // Change to match your schema
+        res.status(200).json(events);
+    } catch (error) {
+        console.error('Error fetching events:', error);
+        res.status(500).json({ error: 'Failed to fetch events' });
+    }
+};
 
 const allUpcomingEvents = async (req, res) => {
     try {
@@ -275,23 +288,30 @@ const sort = async (req,res)=>{
 const EventDetails = async (req, res) => {
     try {
         const eventId = req.params.id;
-    
+
+        // Validate event ID
         if (!eventId) {
-          return res.status(400).json({ error: "Event ID is required" });
-        }
-    
-        let event = [];
-        
-        try {
-          event = await Event.findOne({ event_id: eventId }).populate("user_id", "fullname email profile_picture").populate("category");
-        } catch (error) {
-          event = await Event.findById(eventId).populate("user_id", "fullname email profile_picture").populate("category");
-        }
-    
-        if (!event) {
-          return res.status(404).json({ error: "Event not found" });
+            return res.status(400).json({ error: "Event ID is required" });
         }
 
+        // Try to find the event using the event_id first, then fall back to _id
+        let event = await Event.findOne({ event_id: eventId })
+            .populate("user_id", "fullname email profile_picture")
+            .populate("category");
+
+        // If not found, try by MongoDB _id
+        if (!event) {
+            event = await Event.findById(eventId)
+                .populate("user_id", "fullname email profile_picture")
+                .populate("category");
+        }
+
+        // Check if the event was found
+        if (!event) {
+            return res.status(404).json({ error: "Event not found" });
+        }
+
+        // Respond with the event details
         res.status(200).json({
             success: true,
             data: {
@@ -315,9 +335,10 @@ const EventDetails = async (req, res) => {
         });
     } catch (error) {
         console.error('Error in Event Details: ', error.message);
-        res.status(500).json({error: 'Internal Server Error' });
+        res.status(500).json({ error: 'Internal Server Error' });
     }
 };
+
 
 // ==================================================================================
 
@@ -325,26 +346,59 @@ const updateEvent = async (req, res) => {
     try {
         const { id } = req.params;
         const {
-        title, description, location, date, startTime, endTime, isPaid, ticketPrice,
-        maxAttendees, currentAttendees, category, images
+            title, description, location, date, startTime, endTime, isPaid, ticketPrice,
+            maxAttendees = null, category, food_stalls = false
         } = req.body;
-    
-        if (!title || !description || !location || !date || !startTime || !endTime || isPaid === undefined) {
-        return res.status(400).json({ success: false, message: 'Please provide all required fields.' });
-        }
-    
-        const event = await Event.findByIdAndUpdate(id, {
-        title, description, location, date, start_time: startTime, end_time: endTime,
-        is_paid: isPaid, ticket_price: ticketPrice, max_attendees: maxAttendees,
-        current_attendees: currentAttendees, category, images
-        }, { new: true });
-    
-        if (!event) {
-        return res.status(404).json({ success: false, message: 'Event not found.' });
+
+        // Validate required fields
+        if (!title || !description || !location || !date || !startTime || !endTime || typeof isPaid === 'undefined') {
+            return res.status(400).json({ error: 'Please fill in all required fields.' });
         }
 
-        res.status(200).json({ success: true, data:
-            {
+        // Cast strings to booleans
+        const isPaidBoolean = isPaid === 'true' || isPaid === true;  // Convert string "true"/"false" to boolean
+        const foodStallsBoolean = food_stalls === 'true' || food_stalls === true;
+
+        // Validate ticket price for paid events
+        let price = 0;
+        if (isPaidBoolean) {
+            price = parseFloat(ticketPrice);
+
+            if (isNaN(price) || price <= 0) {
+                return res.status(400).json({ error: 'Please provide a valid ticket price greater than zero for paid events.' });
+            }
+        }
+
+        // Parse category array from string if needed
+        const categoryIds = Array.isArray(category) ? category : JSON.parse(category);
+
+        // Find the event by event_id or _id
+        const event = await Event.findOne({ event_id: id }) || await Event.findById(id);
+        console.log(id);
+        if (!event) {
+            return res.status(404).json({ success: false, message: 'Event not found.' });
+        }
+
+        // Update the event fields
+        event.title = title;
+        event.description = description;
+        event.location = location;
+        event.date = date;
+        event.start_time = startTime;
+        event.end_time = endTime;
+        event.is_paid = isPaidBoolean;
+        event.ticket_price = isPaidBoolean ? price : 0;
+        event.max_attendees = maxAttendees;
+        event.category = categoryIds;
+        event.food_stalls = foodStallsBoolean;
+
+        // Save the updated event
+        await event.save();
+
+        // Return updated event
+        res.status(200).json({
+            success: true,
+            data: {
                 id: event._id.toString(),
                 event_id: event.event_id,
                 eventAuthor: event.user_id.fullname,
@@ -359,14 +413,43 @@ const updateEvent = async (req, res) => {
                 maxAttendees: event.max_attendees,
                 currentAttendees: event.current_attendees,
                 category: event.category,
-                images: event.images || []
+                images: event.images || [],
             }
         });
     } catch (error) {
-        console.error('Error inupdating an events: ', error.message);
+        console.error('Error updating event:', error.message);
         res.status(500).json({ error: "Internal Server Error" });
     }
 };
+
+const deleteEvent = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const event = await Event.findOne({ event_id: id }) || await Event.findById(id);
+        if (!event) {
+            return res.status(404).json({ success: false, message: 'Event not found.' });
+        }
+
+        // if (event.user_id.toString() !== req.user._id.toString()) {
+        //     return res.status(401).json({ success: false, message: 'This event is not yours.' });
+        // }
+
+        await Event.findByIdAndDelete(event._id);
+
+        // Return success response
+        res.status(200).json({
+            success: true,
+            message: 'Event deleted successfully.',
+        });
+    } catch (error) {
+        console.error('Error deleting event:', error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+};
+
+
+
 
 // ===================================================================================
 
@@ -793,8 +876,9 @@ const search2 = async (req, res) => {
 };
 
 module.exports = {
-    updateEvent,
     createEvent,
+    updateEvent,
+    deleteEvent,
     createEventNoImage,
     allEvents,
     allUpcomingEvents,
@@ -804,5 +888,6 @@ module.exports = {
     sort,
     cancelEvent,
     search2,
-    search
+    search,
+    MyEvents
 }
