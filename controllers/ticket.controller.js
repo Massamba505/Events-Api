@@ -32,7 +32,7 @@ const buyTicket = async (req, res) => {
     if (ticketType !== 'RSVP') {
       paymentIntent = await stripe.paymentIntents.create({
         amount: Math.round(price * 100),
-        currency: 'usd',
+        currency: 'zar',
         payment_method_types: ['card'],
       });
     }
@@ -74,6 +74,127 @@ const buyTicket = async (req, res) => {
       ticketId: ticket._id,
       clientSecret: paymentIntent.client_secret,
     });
+
+  } catch (error) {
+    console.error('Error buying ticket:', error);
+    res.status(500).json({ error: 'Failed to process ticket purchase' });
+  }
+};
+
+const buyTicket2 = async (req, res) => {
+  const { eventId, ticketType, price, eventDate } = req.body;
+  const userId = req.user._id;
+
+
+  // Basic validation
+  if (!eventId || typeof eventId !== 'string') {
+    return res.status(400).json({ error: 'Invalid or missing eventId' });
+  }
+
+
+  const validTicketTypes = ['Paid', 'RSVP', 'General Admission', 'VIP', 'Early Bird'];
+  if (!ticketType || !validTicketTypes.includes(ticketType)) {
+    return res.status(400).json({ error: 'Invalid or missing ticketType' });
+  }
+
+  if (ticketType !== 'RSVP' && (!price || typeof price !== 'number' || price <= 0)) {
+    return res.status(400).json({ error: 'Invalid or missing price for paid tickets' });
+  }
+
+  if (!eventDate || isNaN(new Date(eventDate))) {
+    return res.status(400).json({ error: 'Invalid or missing eventDate' });
+  }
+
+  try {
+    // Find the event by ID
+    const event = await Event.findOne({ event_id: eventId }) || await Event.findById(eventId);
+    if (!event) {
+      return res.status(404).json({ error: 'Event not found' });
+    }
+
+    if (!event) {
+      return res.status(404).json({ error: 'Event not found' });
+    }
+
+    if(event.current_attendee_list.includes(userId)){
+      return res.status(401).json({error:"You already the ticket for this event."});
+    }
+
+    if(event && event.current_attendees + 1 > event.max_attendees){
+      return res.status(401).json({error:"maximum attendance reached"});
+    }
+
+    let ticket;
+
+    if (ticketType === 'RSVP') {
+      ticket = new Ticket({
+        event_id: event._id,
+        user_id: userId,
+        ticket_type: ticketType,
+        price: 0,
+        event_date: eventDate,
+        payment_status: 'Paid',
+      });
+      
+      await ticket.save();
+      event.current_attendees+=1;
+      event.current_attendee_list.push(ticket.user_id);
+      await event.save();
+
+      // Generate QR code after saving the ticket
+      const qrCodeData = `Ticket ID: ${ticket._id}, Event ID: ${event._id}`;
+      ticket.qr_code = await QRCode.toDataURL(qrCodeData);
+      await ticket.save();
+      const ticketdetails = await Ticket.findById(ticket._id).populate("event_id");
+
+      return res.status(200).json({
+        success: true,
+        message: 'RSVP successful',
+        ticket:ticketdetails,
+      });
+    }
+
+    // Create a product in Stripe for the event if it doesn't already exist
+    const product = await stripe.products.create({
+      name: event.title,
+      images: [event.images[0]], // Ensure this is an array
+    });
+
+    // Create a price for the product
+    const stripePrice = await stripe.prices.create({
+      unit_amount: Math.round(price * 100), // price in cents
+      currency: 'zar',
+      product: product.id,
+    });
+
+    // Create a Stripe Checkout session for paid tickets
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: [{
+        price: stripePrice.id, // Use the created price ID
+        quantity: 1,
+      }],
+      mode: 'payment',
+      success_url: `${process.env.BASE_URL}/tickets/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.BASE_URL}/tickets/cancel`,
+    });
+
+    // Create the ticket with payment status as Pending
+    ticket = new Ticket({
+      event_id: event._id,
+      user_id: userId,
+      ticket_type: ticketType,
+      price: price,
+      stripe_payment_intent_id: session.id, // Store session ID
+      event_date: eventDate,
+      payment_status: 'Pending',
+    });
+
+    await ticket.save();
+
+    // Return session URL to the client
+    res.status(200).json({ sessionId: session.id,url: session.url });
+
   } catch (error) {
     console.error('Error buying ticket:', error);
     res.status(500).json({ error: 'Failed to process ticket purchase' });
@@ -81,40 +202,86 @@ const buyTicket = async (req, res) => {
 };
 
 const confirmPayment = async (req, res) => {
-  const { ticketId, paymentIntentId } = req.body;
-
-  // Basic validation
-  if (!ticketId || typeof ticketId !== 'string') {
-    return res.status(400).json({ error: 'Invalid or missing ticketId' });
-  }
-
-  if (!paymentIntentId || typeof paymentIntentId !== 'string') {
-    return res.status(400).json({ error: 'Invalid or missing paymentIntentId' });
-  }
+  // const sessionId = req.query.session_id;
+  const { session_id } = req.params;
 
   try {
-    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    // const session = await stripe.checkout.sessions.retrieve(sessionId);
+    let session = null;
+    try {
+      session =  await stripe.checkout.sessions.retrieve(session_id);
+    } catch (error) {
+      session = null;
+    }
 
-    if (paymentIntent.status === 'succeeded') {
-      const ticket = await Ticket.findById(ticketId);
+    // Verify that the session exists and is completed
+    if (session && session.payment_status === 'paid') {
+      const ticket = await Ticket.findOne({ stripe_payment_intent_id: session_id });
 
-      const qrCodeData = `Ticket ID: ${ticketId}, Event ID: ${ticket.event_id}`;
-      const qrCode = await QRCode.toDataURL(qrCodeData);
-
-      ticket.payment_status = 'Paid';
-      ticket.qr_code = qrCode;
-      await ticket.save();
-
-      res.status(200).json({
-        message: 'Payment confirmed and QR code generated',
-        ticket,
-      });
-    } else {
-      res.status(400).json({ error: 'Payment was not successful' });
+      if (ticket) {
+        // Update ticket payment status to 'Paid'
+        ticket.payment_status = 'Paid';
+        const qrCodeData = `Ticket ID: ${ticket._id}, Event ID: ${ticket.event_id}`;
+        ticket.qr_code = await QRCode.toDataURL(qrCodeData);
+        await ticket.save();
+        
+        // Find the event by ID
+        const event = await Event.findById(ticket.event_id);
+        if (!event) {
+          return res.status(404).json({ error: 'Event not found' });
+        }
+        if(!event.current_attendee_list.includes(ticket.user_id)){
+          event.current_attendees+=1;
+          event.current_attendee_list.push(ticket.user_id);
+          await event.save();
+        }
+        const ticketdetails = await Ticket.findById(ticket._id).populate("event_id");
+        
+        return res.status(200).json({
+          success: true,
+          message: 'Payment successful',
+          ticket:ticketdetails,
+        });
+      } else {
+        return res.status(404).json({ error: 'Ticket not found' });
+      }
+    }
+    else {
+      const ticket = await Ticket.findById(session_id );
+      if (ticket) {
+        const ticketdetails = await Ticket.findById(ticket._id).populate("event_id");
+        return res.status(200).json({
+          success: true,
+          message: 'Payment successful',
+          ticket:ticketdetails,
+        });
+      } else {
+        return res.status(400).json({ error: 'Claming unsuccessful' });
+      }
     }
   } catch (error) {
-    console.error('Error confirming payment:', error);
-    res.status(500).json({ error: 'Failed to confirm payment' });
+    console.error('Error handling success route:', error);
+    res.status(500).json({ error: 'Failed to process success' });
+  }
+};
+
+const cancelPayment = async (req, res) => {
+  // const sessionId = req.query.session_id;
+  const { session_id } = req.params;
+
+
+  try {
+    // Delete the ticket associated with the session ID
+    const ticket = await Ticket.findOneAndDelete({ stripe_payment_intent_id: session_id });
+
+    if (ticket) {
+      return res.status(200).json({ success: true, message: 'Payment cancelled.' });
+    } else {
+      return res.status(404).json({ error: 'Ticket not found' });
+    }
+  } catch (error) {
+    console.error('Error handling cancel route:', error);
+    res.status(500).json({ error: 'Failed to process cancellation' });
   }
 };
 
@@ -230,15 +397,11 @@ const getTicket = async (req, res) => {
 };
 
 const getAllTickets = async (req, res) => {
-  const { userId } = req.params;
-
-  // Basic validation
-  if (!userId || typeof userId !== 'string') {
-    return res.status(400).json({ error: 'Invalid or missing userId' });
-  }
+  const userId = req.user._id;
 
   try {
-    const tickets = await Ticket.find({ user_id: userId }).populate('event_id');
+    const tickets = await Ticket.find({user_id:userId}).populate('event_id').sort({ createdAt: -1 });//{ user_id: userId }
+    console.log(userId,tickets)
     res.status(200).json(tickets);
   } catch (error) {
     console.error('Error fetching user tickets:', error);
@@ -246,9 +409,11 @@ const getAllTickets = async (req, res) => {
   }
 };
 
+
 module.exports = {
-  buyTicket,
+  buyTicket2,
   confirmPayment,
+  cancelPayment,
   scanTicket,
   cancelTicket,
   requestRefund,

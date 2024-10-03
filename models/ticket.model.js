@@ -14,16 +14,19 @@ const ticketSchema = new Schema({
   },
   ticket_type: {
     type: String,
-    enum: ['RSVP', 'General Admission', 'VIP', 'Early Bird'],
+    enum: ['Paid','RSVP', 'General Admission', 'VIP', 'Early Bird'],
     required: true
   },
   price: {
     type: Number,
     required: true
   },
+  event_date: {
+    type: Date,
+    required: true
+  },
   stripe_payment_intent_id: {
     type: String,
-    required: true
   },
   payment_status: {
     type: String,
@@ -33,10 +36,6 @@ const ticketSchema = new Schema({
   qr_code: {
     type: String, // URL or base64 string for the QR code
     default: null
-  },
-  event_date: {
-    type: Date,
-    required: true
   },
   refund_status: {
     type: String,

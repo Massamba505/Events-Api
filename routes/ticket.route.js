@@ -1,21 +1,22 @@
 const express = require('express');
 const router = express.Router();
-const { buyTicket, confirmPayment, cancelTicket, requestRefund, getTicket, getAllTickets } = require('../controllers/ticket.controller');
+const { buyTicket2, confirmPayment, cancelTicket, requestRefund, getTicket, getAllTickets, cancelPayment } = require('../controllers/ticket.controller');
 const { authenticate } = require('../middlewares/protect.middleware');
 
 // Ticket routes
 
-router.post('/buy', authenticate, buyTicket);
 
-router.post('/confirm-payment', authenticate, confirmPayment);
+// Updated Routes
+router.post('/buy', authenticate, buyTicket2);
 
-router.post('/cancel/:ticketId', authenticate, cancelTicket);
+router.get('/success/:session_id', confirmPayment);
+
+router.get('/cancel/:session_id', cancelPayment);
 
 router.post('/refund/:ticketId', authenticate, requestRefund);
 
 router.get('/:ticketId', authenticate, getTicket);
 
-router.get('/user/:userId', authenticate, getAllTickets);
-
+router.get('/', authenticate, getAllTickets);
 
 module.exports = router;
