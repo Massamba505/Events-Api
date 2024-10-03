@@ -400,8 +400,7 @@ const getAllTickets = async (req, res) => {
   const userId = req.user._id;
 
   try {
-    const tickets = await Ticket.find({user_id:userId}).populate('event_id').sort({ createdAt: -1 });//{ user_id: userId }
-    console.log(userId,tickets)
+    const tickets = await Ticket.find({user_id:userId}).populate('event_id').sort({ createdAt: -1 });
     res.status(200).json(tickets);
   } catch (error) {
     console.error('Error fetching user tickets:', error);
