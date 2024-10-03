@@ -93,7 +93,6 @@ const getUserDetails = async (req, res) => {
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
         }
-        console.log(user)
         // Format the response as desired
         const userData = {
             firstname: user.fullname.split(" ")[0],
