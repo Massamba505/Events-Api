@@ -208,7 +208,65 @@ const allPastEvents = async (req, res) => {
     }
 };
 
+const getPopularEvents = async (req, res) => {
+    try {
+      let events = await Event.find({})
+        .populate("user_id", "fullname email profile_picture")
+        .populate("category");
+  
+      events = events.sort((a, b) => b.current_attendees - a.current_attendees);
+  
+      const popularEvents = events.slice(0, 8);
 
+      const allevents = mapEvents(popularEvents);
+
+      res.status(200).json({
+          success: true,
+          count: allevents.length,
+          data: allevents
+      });
+    } catch (error) {
+      console.error('Error in fetching popular events: ', error.message);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+};
+
+const getRecommendedEvents = async (req, res) => {
+    try {
+      const userId = req.user ? req.user._id : null;
+  
+      if (!userId) {
+        return res.status(401).json({ error: 'User not authenticated' });
+      }
+  
+      // Fetch user preferences
+      const userPreference = await UserPreference.findOne({ user_id: userId }).populate('preferred_category');
+  
+      if (!userPreference || userPreference.preferred_category.length === 0) {
+        return res.status(200).json({ success: true, message: 'No user preferences found.' });
+      }
+  
+      const events = await Event.find({
+        category: { $in: userPreference.preferred_category }
+      })
+      .populate("user_id", "fullname email profile_picture")
+      .populate("category");
+  
+      // Sort events if needed (for example by date or some other criteria)
+      const recommendedEvents = events.sort((a, b) => new Date(a.date) - new Date(b.date)).slice(0, 4);
+      const allevents = mapEvents(recommendedEvents);
+
+      res.status(200).json({
+          success: true,
+          count: allevents.length,
+          data: allevents
+      });
+    } catch (error) {
+      console.error('Error in fetching recommended events: ', error.message);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+};
+  
 // ==================================================================================
 
 const sort = async (req,res)=>{
@@ -328,7 +386,6 @@ const EventDetails = async (req, res) => {
     }
 };
 
-
 // ==================================================================================
 
 const updateEvent = async (req, res) => {
@@ -436,9 +493,6 @@ const deleteEvent = async (req, res) => {
     }
 };
 
-
-
-
 // ===================================================================================
 
 const cancelEvent = async (req, res) => {
@@ -473,7 +527,6 @@ const cancelEvent = async (req, res) => {
         res.status(500).json({ error: "Internal Server Error" });
     }
 };
-
 
 // =====================================================================================
 
@@ -774,7 +827,6 @@ const createEventNoImage = async (req, res) => {
     }
 };
 
-
 const search = async (req, res) => {
     const { query } = req.query; // Extract the search query from the query parameters
 
@@ -877,5 +929,7 @@ module.exports = {
     cancelEvent,
     search2,
     search,
-    MyEvents
+    MyEvents,
+    getPopularEvents,
+    getRecommendedEvents
 }
