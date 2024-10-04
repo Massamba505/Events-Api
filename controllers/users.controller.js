@@ -93,6 +93,7 @@ const getUserDetails = async (req, res) => {
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
         }
+        console.log(user);
         // Format the response as desired
         const userData = {
             firstname: user.fullname.split(" ")[0],
@@ -113,67 +114,73 @@ const getUserDetails = async (req, res) => {
 
 const updateUserDetails = async (req, res) => {
     try {
-      const userId = req.user._id;
-      const { fullname, email, about, push_notifications, comments } = req.body;
-      const imageFile = req.file; // Handle image upload (can be null)
-  
-      if (!fullname && !email && !about && !push_notifications && comments === undefined && !imageFile) {
-        return res.status(400).json({ error: 'At least one field (fullname, email, about, push notifications, or comments) must be provided.' });
-      }
-  
-      // Initialize the updateFields object
-      const updateFields = {};
-  
-      // Add fields to the update object only if they are provided
-      if (fullname) updateFields.fullname = fullname;
-      if (email) updateFields.email = email;
-      if (about) updateFields.about = about;
-      if (push_notifications !== undefined) updateFields.push_notifications = push_notifications; // Ensure we handle boolean values
-      if (comments !== undefined) updateFields.comments = comments;
+        const userId = req.user._id;
+        const { fullname, email, about, push_notifications, comments } = req.body;
+        const imageFile = req.file; // Handle image upload (can be null)
 
-      let imageUrl = null; // Default to null if no new image is provided
-      if (imageFile) {
-        const imagePath = path.join(__dirname, '..', 'uploads', imageFile.filename); // Path where multer temporarily stores images
-  
-        // Upload image and get its URL
-        imageUrl = await uploadImage(imagePath);
-        updateFields.profile_picture = imageUrl;
-        // Clean up temporary file asynchronously
-        fs.unlink(imagePath, (err) => {
-          if (err) {
-            console.error(`Error deleting file: ${imagePath}`, err);
-          }
-        });
-      }
-  
-      // Update the user details in the database
-      const updatedUser = await User.findByIdAndUpdate(
-        userId,
-        { $set: updateFields },
-        { new: true, runValidators: true }
-      ).select('fullname email about push_notifications profile_picture comments');
-  
-      if (!updatedUser) {
-        return res.status(404).json({ error: 'User not found' });
-      }
-  
-      // Prepare the response with updated user data
-      const userData = {
-        firstname: updatedUser.fullname.split(" ")[0],
-        lastname: updatedUser.fullname.split(" ")[1] || '',
-        email: updatedUser.email,
-        about: updatedUser.about || '',
-        photoUrl: updatedUser.profile_picture || '',
-        push_notifications: updatedUser.push_notifications || {},
-        comments: updatedUser.comments || true
-      };
-  
-      res.status(200).json(userData);
+        if (!fullname && !email && !about && push_notifications === undefined && comments === undefined && !imageFile) {
+            return res.status(400).json({ error: 'At least one field (fullname, email, about, push notifications, or comments) must be provided.' });
+        }
+
+        // Initialize the updateFields object
+        const updateFields = {};
+
+        // Add fields to the update object only if they are provided
+        if (fullname) updateFields.fullname = fullname;
+        if (email) updateFields.email = email;
+        if (about) updateFields.about = about;
+        if (push_notifications !== undefined) updateFields.push_notifications = push_notifications; // Ensure we handle boolean values
+        
+        // Handle comments: convert 'true'/'false' strings to boolean
+        if (comments !== undefined) {
+            updateFields.comments = comments === 'true'; // Convert to boolean
+        }
+
+        console.log(updateFields);
+        let imageUrl = null; // Default to null if no new image is provided
+        if (imageFile) {
+            const imagePath = path.join(__dirname, '..', 'uploads', imageFile.filename); // Path where multer temporarily stores images
+
+            // Upload image and get its URL
+            imageUrl = await uploadImage(imagePath);
+            updateFields.profile_picture = imageUrl;
+            // Clean up temporary file asynchronously
+            fs.unlink(imagePath, (err) => {
+                if (err) {
+                    console.error(`Error deleting file: ${imagePath}`, err);
+                }
+            });
+        }
+
+        // Update the user details in the database
+        const updatedUser = await User.findByIdAndUpdate(
+            userId,
+            { $set: updateFields },
+            { new: true, runValidators: true }
+        ).select('fullname email about push_notifications profile_picture comments');
+
+        if (!updatedUser) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        // Prepare the response with updated user data
+        const userData = {
+            firstname: updatedUser.fullname.split(" ")[0],
+            lastname: updatedUser.fullname.split(" ")[1] || '',
+            email: updatedUser.email,
+            about: updatedUser.about || '',
+            photoUrl: updatedUser.profile_picture || '',
+            push_notifications: updatedUser.push_notifications || {},
+            comments: updatedUser.comments // This is already a boolean
+        };
+
+        res.status(200).json(userData);
     } catch (error) {
-      console.error('Error updating user:', error.message);
-      res.status(500).json({ error: 'Internal Server Error' });
+        console.error('Error updating user:', error.message);
+        res.status(500).json({ error: 'Internal Server Error' });
     }
 };
+
 
 module.exports = {
     EditUserPreference,
