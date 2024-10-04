@@ -8,6 +8,28 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
+
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+      <div class="container-fluid">
+          <a class="navbar-brand" href="#">Event API</a>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+              <span class="navbar-toggler-icon"></span>
+          </button>
+          <div class="collapse navbar-collapse" id="navbarNav">
+              <ul class="navbar-nav ms-auto">
+                  <li class="nav-item">
+                      <a class="nav-link active" href="#">API Endpoints</a>
+                  </li>
+                  <li class="nav-item">
+                      <a class="nav-link" href="index.html">Events</a>
+                  </li>
+              </ul>
+          </div>
+      </div>
+  </nav>
+
   <div class="container mt-5">
     <h1 class="text-center mb-4">Ticketing API Endpoints</h1>
     <div class="accordion" id="apiAccordion">
@@ -178,51 +200,9 @@ Authorization: Bearer <TOKEN>
   "ticket_type": "General Admission",
   "price": 50,
   "qr_code": "<QR_CODE_DATA>",
-  "event_date": "2024-10-02T14:00:00Z"
+  "event_date": "2024-10-02T14:00:00Z",
+  "payment_status": "Paid"
 }
-            </pre>
-          </div>
-        </div>
-      </div>
-
-      <!-- Get All Tickets for a User -->
-      <div class="accordion-item">
-        <h2 class="accordion-header" id="headingGetAllTickets">
-          <button class="accordion-button bg-info text-white" type="button" data-bs-toggle="collapse" data-bs-target="#collapseGetAllTickets" aria-expanded="false" aria-controls="collapseGetAllTickets">
-            GET /api/tickets/user/:userId - Get All Tickets for a User
-          </button>
-        </h2>
-        <div id="collapseGetAllTickets" class="accordion-collapse collapse" aria-labelledby="headingGetAllTickets" data-bs-parent="#apiAccordion">
-          <div class="accordion-body">
-            <h5>Description:</h5>
-            <p>This endpoint retrieves all tickets purchased by a user.</p>
-            <h5>Request:</h5>
-            <pre>
-GET /api/tickets/user/:userId
-Authorization: Bearer <TOKEN>
-            </pre>
-            <h5>Response (Success):</h5>
-            <pre>
-[
-  {
-    "_id": "64f90a8e50bcd768b6d9a3d8",
-    "event_id": "64f90a6e50bcd768b6d9a3d7",
-    "user_id": "64f90b3e50bcd768b6d9a3da",
-    "ticket_type": "General Admission",
-    "price": 50,
-    "qr_code": "<QR_CODE_DATA>",
-    "event_date": "2024-10-02T14:00:00Z"
-  },
-  {
-    "_id": "64f90b0e50bcd768b6d9a3d9",
-    "event_id": "64f90a6e50bcd768b6d9a3d7",
-    "user_id": "64f90b3e50bcd768b6d9a3da",
-    "ticket_type": "VIP",
-    "price": 100,
-    "qr_code": "<QR_CODE_DATA>",
-    "event_date": "2024-10-02T14:00:00Z"
-  }
-]
             </pre>
           </div>
         </div>

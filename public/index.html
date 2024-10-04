@@ -3,203 +3,244 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>API Documentation</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/prism.min.js"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism.min.css" rel="stylesheet"/>
-    <style>
-        body {
-            background-color: #f8f9fa;
-        }
-        .navbar {
-            background-color: #1484f4;
-        }
-        .navbar-brand, .nav-link {
-            color: white !important;
-        }
-        h1, h2 {
-            color: #137fea;
-        }
-        .card {
-            box-shadow: 0 4px 8px rgb(9, 129, 204);
-            border-radius: 8px;
-        }
-        .card-header {
-            background-color: #2185ea;
-            color: white;
-        }
-        .badge-category {
-            background-color: #17a2b8;
-            font-size: 0.8rem;
-            margin-right: 5px;
-        }
-        pre {
-            background-color: #f1f3f5;
-            padding: 15px;
-            border-radius: 6px;
-        }
-        footer {
-            background-color: #2185ea;
-            color: white;
-            padding: 10px 0;
-        }
-    </style>
+    <title>Event API Endpoints</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
+
     <!-- Navbar -->
-
-    <!-- Main Content -->
-    <div class="container mt-5">
-        <h1 class="text-center mb-4">Events and Activities API Documentation 3A</h1>
-        <p class="lead text-center mb-5">A guide to using the Event API endpoints for managing and retrieving event data.</p>
-
-        <div class="card mb-4">
-            <div class="card-header">
-                <h4>Available Endpoints</h4>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">Event API</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#">API Endpoints</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="ticket.html">Tickets</a>
+                    </li>
+                </ul>
             </div>
-            <div class="card-body">
-                <!-- 1. Get All Events -->
-                <div class="mb-4">
-                    <h5>1. Get All Events</h5>
-                    <p><strong>Endpoint:</strong> <code>GET /api/events</code></p>
-                    <p>Retrieve all events from the database.</p>
-                    <h6>Example Request:</h6>
-                    <pre><code>fetch('/api/events').then(response => response.json()).then(data => console.log(data));</code></pre>
-                    <h6>Response Example:</h6>
-                    <pre><code class="language-json">
-{
-    "success": true,
-    "count": 3,
-    "data": [
-        {
-            "event_id": 1002,
-            "eventAuthor": "John Doe",
-            "email": "john@example.com",
-            "title": "Tech Conference",
-            "description": "An exciting tech conference.",
-            "location": "New York",
-            "date": "2024-10-01",
-            "startTime": "09:00 AM",
-            "endTime": "05:00 PM",
-            "isPaid": true,
-            "ticketPrice": 100,
-            "maxAttendees": 500,
-            "currentAttendees": 250,
-            "category": [
-                { "name": "Tech" },
-                { "name": "Conference" }
-            ],
-            "images": ["image1.jpg", "image2.jpg"]
-        },
-        {
-            "event_id": 1001,
-            "eventAuthor": "Jane Smith",
-            "email": "jane@example.com",
-            "title": "Art Expo",
-            "description": "A modern art exhibition.",
-            "location": "Los Angeles",
-            "date": "2024-11-10",
-            "startTime": "10:00 AM",
-            "endTime": "06:00 PM",
-            "isPaid": false,
-            "ticketPrice": 0,
-            "maxAttendees": 300,
-            "currentAttendees": 200,
-            "category": [
-                { "name": "Art" },
-                { "name": "Exhibition" }
-            ],
-            "images": ["art1.jpg", "art2.jpg"]
-        }
-    ]
+        </div>
+    </nav>
+
+    <div class="container my-5">
+        <h1 class="mb-4">Event API Endpoints</h1>
+        <div class="accordion" id="apiAccordion">
+            <!-- All Events -->
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="headingAllEvents">
+                    <button class="accordion-button text-white bg-primary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAllEvents" aria-expanded="true" aria-controls="collapseAllEvents">
+                        GET /api/events/
+                    </button>
+                </h2>
+                <div id="collapseAllEvents" class="accordion-collapse collapse show" aria-labelledby="headingAllEvents" data-bs-parent="#apiAccordion">
+                    <div class="accordion-body">
+                        <p>This endpoint retrieves a list of all events available in the system.</p>
+                        <pre><code>{
+  "events": [
+    {
+      "event_id": "12345",
+      "eventAuthor": "John Doe",
+      "email": "johndoe@example.com",
+      "title": "Tech Conference",
+      "description": "A technology event.",
+      "location": "City Hall",
+      "date": "2024-12-10",
+      "start_time": "09:00 AM",
+      "end_time": "05:00 PM",
+      "is_paid": true,
+      "ticket_price": 50,
+      "max_attendees": 100,
+      "current_attendees": 80,
+      "category": "Technology",
+      "images": ["img url", "img url"]
+    }
+  ]
 }
-                    </code></pre>
-                </div>
-
-                <!-- 2. Get Upcoming Events -->
-                <div class="mb-4">
-                    <h5>2. Get Upcoming Events</h5>
-                    <p><strong>Endpoint:</strong> <code>GET /api/events/upcoming-events</code></p>
-                    <p>Retrieve events that are scheduled to start in the future.</p>
-                    <h6>Example Request:</h6>
-                    <pre><code>fetch('/api/events/upcoming-events').then(response => response.json()).then(data => console.log(data));</code></pre>
-                    <h6>Response Example:</h6>
-                    <pre><code class="language-json">
-{
-    "success": true,
-    "count": 2,
-    "data": [
-        {
-            "event_id": 1002,
-            "eventAuthor": "John Doe",
-            "email": "john@example.com",
-            "title": "Tech Conference",
-            "description": "An exciting tech conference.",
-            "location": "New York",
-            "date": "2024-10-01",
-            "startTime": "09:00 AM",
-            "endTime": "05:00 PM",
-            "isPaid": true,
-            "ticketPrice": 100,
-            "maxAttendees": 500,
-            "currentAttendees": 250,
-            "category": [
-                { "name": "Tech" },
-                { "name": "Conference" }
-            ],
-            "images": ["image1.jpg", "image2.jpg"]
-        }
-    ]
-}
-                    </code></pre>
-                </div>
-
-                <!-- 3. Get In-Progress Events -->
-                <div class="mb-4">
-                    <h5>3. Get In-Progress Events</h5>
-                    <p><strong>Endpoint:</strong> <code>GET /api/events/inprogress-events</code></p>
-                    <p>Retrieve events that are currently in progress.</p>
-                    <h6>Example Request:</h6>
-                    <pre><code>fetch('/api/events/inprogress-events').then(response => response.json()).then(data => console.log(data));</code></pre>
-                </div>
-
-                <!-- 4. Get Past Events -->
-                <div class="mb-4">
-                    <h5>4. Get Past Events</h5>
-                    <p><strong>Endpoint:</strong> <code>GET /api/events/past-events</code></p>
-                    <p>Retrieve events that have already ended.</p>
-                    <h6>Example Request:</h6>
-                    <pre><code>fetch('/api/events/past-events').then(response => response.json()).then(data => console.log(data));</code></pre>
-                </div>
-
-                <!-- 5. Sort Events -->
-                <div class="mb-4">
-                    <h5>5. Sort Events</h5>
-                    <p><strong>Endpoint:</strong> <code>GET /api/events/sort-by?criteria=&lt;criteria&gt;&amp;order=&lt;order&gt;</code></p>
-                    <p>Sort events based on the provided criteria and order.</p>
-                    <h6>Example Request:</h6>
-                    <pre><code>fetch('/api/events/sort-by?criteria=date&order=asc').then(response => response.json()).then(data => console.log(data));</code></pre>
-                </div>
-
-                <!-- 6. Get Event Details -->
-                <div class="mb-4">
-                    <h5>6. Get Event Details</h5>
-                    <p><strong>Endpoint:</strong> <code>GET /api/events/:id</code></p>
-                    <p>Retrieve event details using either the <strong>_id</strong> or <strong>event_id</strong>.</p>
-                    <h6>Example Request:</h6>
-                    <pre><code>fetch('/api/events/1001').then(response => response.json()).then(data => console.log(data));</code></pre>
+                        </code></pre>
+                    </div>
                 </div>
             </div>
+
+            <!-- Search Events -->
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="headingSearchEvents">
+                    <button class="accordion-button text-white bg-success collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSearchEvents" aria-expanded="false" aria-controls="collapseSearchEvents">
+                        GET /api/events/search?query={search}
+                    </button>
+                </h2>
+                <div id="collapseSearchEvents" class="accordion-collapse collapse" aria-labelledby="headingSearchEvents" data-bs-parent="#apiAccordion">
+                    <div class="accordion-body">
+                        <p>This endpoint allows users to search for events based on various query parameters (e.g., title, location, date, category).</p>
+                        <pre><code>{
+  "events": [
+    {
+      "event_id": "67890",
+      "eventAuthor": "Jane Smith",
+      "email": "janesmith@example.com",
+      "title": "Art Exhibition",
+      "description": "An exhibition of modern art.",
+      "location": "Art Gallery",
+      "date": "2024-11-20",
+      "start_time": "10:00 AM",
+      "end_time": "02:00 PM",
+      "is_paid": false,
+      "ticket_price": 0,
+      "max_attendees": 50,
+      "current_attendees": 45,
+      "category": "Art",
+      "images":  ["img url", "img url"]
+    }
+  ]
+}
+                        </code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Upcoming Events -->
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="headingUpcomingEvents">
+                    <button class="accordion-button text-white bg-secondary collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseUpcomingEvents" aria-expanded="false" aria-controls="collapseUpcomingEvents">
+                        GET /api/events/upcoming-events
+                    </button>
+                </h2>
+                <div id="collapseUpcomingEvents" class="accordion-collapse collapse" aria-labelledby="headingUpcomingEvents" data-bs-parent="#apiAccordion">
+                    <div class="accordion-body">
+                        <p>This endpoint returns all events that are scheduled to occur in the future.</p>
+                        <pre><code>{
+  "upcomingEvents": [
+    {
+      "event_id": "112233",
+      "eventAuthor": "Alice Johnson",
+      "email": "alice@example.com",
+      "title": "Music Festival",
+      "description": "An outdoor music festival.",
+      "location": "Central Park",
+      "date": "2024-12-15",
+      "start_time": "03:00 PM",
+      "end_time": "11:00 PM",
+      "is_paid": true,
+      "ticket_price": 75,
+      "max_attendees": 500,
+      "current_attendees": 300,
+      "category": "Music",
+      "images": ["img url", "img url"]
+    }
+  ]
+}
+                        </code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- In Progress Events -->
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="headingInProgressEvents">
+                    <button class="accordion-button text-white bg-dark collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseInProgressEvents" aria-expanded="false" aria-controls="collapseInProgressEvents">
+                        GET /api/events/inprogress-events
+                    </button>
+                </h2>
+                <div id="collapseInProgressEvents" class="accordion-collapse collapse" aria-labelledby="headingInProgressEvents" data-bs-parent="#apiAccordion">
+                    <div class="accordion-body">
+                        <p>This endpoint returns events that are currently in progress (i.e., the start time has passed but the end time has not yet been reached).</p>
+                        <pre><code>{
+  "inProgressEvents": [
+    {
+      "event_id": "334455",
+      "eventAuthor": "David Lee",
+      "email": "david@example.com",
+      "title": "Coding Bootcamp",
+      "description": "An immersive coding experience.",
+      "location": "Tech Hub",
+      "date": "2024-10-01",
+      "start_time": "08:00 AM",
+      "end_time": "05:00 PM",
+      "is_paid": true,
+      "ticket_price": 150,
+      "max_attendees": 30,
+      "current_attendees": 25,
+      "category": "Education",
+      "images": ["img url", "img url"]
+    }
+  ]
+}
+                        </code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Past Events -->
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="headingPastEvents">
+                    <button class="accordion-button text-white bg-info collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapsePastEvents" aria-expanded="false" aria-controls="collapsePastEvents">
+                        GET /api/events/past-events
+                    </button>
+                </h2>
+                <div id="collapsePastEvents" class="accordion-collapse collapse" aria-labelledby="headingPastEvents" data-bs-parent="#apiAccordion">
+                    <div class="accordion-body">
+                        <p>This endpoint returns all past events (i.e., events that have already finished).</p>
+                        <pre><code>{
+  "pastEvents": [
+    {
+      "event_id": "556677",
+      "eventAuthor": "Emma White",
+      "email": "emma@example.com",
+      "title": "Yoga Workshop",
+      "description": "A mindfulness and yoga session.",
+      "location": "Yoga Studio",
+      "date": "2024-09-20",
+      "start_time": "07:00 AM",
+      "end_time": "09:00 AM",
+      "is_paid": false,
+      "ticket_price": 0,
+      "max_attendees": 20,
+      "current_attendees": 18,
+      "category": "Health",
+      "images": ["img url", "img url"]
+    }
+  ]
+}
+                        </code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Create New Event -->
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="headingCreateEvent">
+                    <button class="accordion-button text-white bg-danger collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCreateEvent" aria-expanded="false" aria-controls="collapseCreateEvent">
+                        POST /api/events/create
+                    </button>
+                </h2>
+                <div id="collapseCreateEvent" class="accordion-collapse collapse" aria-labelledby="headingCreateEvent" data-bs-parent="#apiAccordion">
+                    <div class="accordion-body">
+                        <p>This endpoint allows users to create a new event by providing necessary event details (e.g., title, description, location, date, start time, end time, etc.).</p>
+                        <pre><code>{
+  "eventAuthor": "John Doe",
+  "title": "New Year Party",
+  "description": "A fun new year celebration.",
+  "location": "Times Square",
+  "date": "2024-12-31",
+  "start_time": "08:00 PM",
+  "end_time": "12:00 AM",
+  "is_paid": true,
+  "ticket_price": 100,
+  "max_attendees": 1000
+}
+                        </code></pre>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 
-    <!-- Footer -->
-    <footer class="text-center mt-5">
-        <div class="container">
-            <p>&copy; 2024 Events API Documentation. All rights reserved.</p>
-        </div>
-    </footer>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
