@@ -32,14 +32,6 @@ const checkClasses = async (date, start, end) => {
       return false;
     }
   };
-  ///use it like this
-//   checkClasses("2024-09-30", "10:00", "12:00").then(result => {
-//     if (result) {
-//       console.log("The time slot is available.");
-//     } else {
-//       console.log("The time slot is not available.");
-//     }
-//   });
 
 const parseTimeToDate = (date, time) => {
     // date format DD/MM/YYYY and time format HH:MM
@@ -88,12 +80,9 @@ const allEvents = async (req, res) => {
 };
 const MyEvents = async (req, res) => {
     const userId = req.user._id; // Assume this comes from authenticated user
-
-    console.log('Fetching events for user ID:', userId);
-    
     try {
-        const events = await Event.find({ user_id: userId }); // Change to match your schema
-        res.status(200).json(events);
+        const events = await Event.find({ user_id: userId }).sort({ createdAt: -1 }).populate("user_id", "fullname email profile_picture").populate("category");
+        res.status(200).json(mapEvents(events));
     } catch (error) {
         console.error('Error fetching events:', error);
         res.status(500).json({ error: 'Failed to fetch events' });
@@ -347,11 +336,11 @@ const updateEvent = async (req, res) => {
         const { id } = req.params;
         const {
             title, description, location, date, startTime, endTime, isPaid, ticketPrice,
-            maxAttendees = null, category, food_stalls = false
+            maxAttendees = null, category = [], food_stalls = false
         } = req.body;
 
         // Validate required fields
-        if (!title || !description || !location || !date || !startTime || !endTime || typeof isPaid === 'undefined') {
+        if (!title || !description || !location || !date ||!category || !startTime || !endTime || typeof isPaid === 'undefined') {
             return res.status(400).json({ error: 'Please fill in all required fields.' });
         }
 
@@ -374,7 +363,6 @@ const updateEvent = async (req, res) => {
 
         // Find the event by event_id or _id
         const event = await Event.findOne({ event_id: id }) || await Event.findById(id);
-        console.log(id);
         if (!event) {
             return res.status(404).json({ success: false, message: 'Event not found.' });
         }
@@ -388,7 +376,7 @@ const updateEvent = async (req, res) => {
         event.end_time = endTime;
         event.is_paid = isPaidBoolean;
         event.ticket_price = isPaidBoolean ? price : 0;
-        event.max_attendees = maxAttendees;
+        event.max_attendees = maxAttendees?Number(maxAttendees):null;
         event.category = categoryIds;
         event.food_stalls = foodStallsBoolean;
 
