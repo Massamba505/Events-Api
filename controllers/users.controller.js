@@ -93,7 +93,6 @@ const getUserDetails = async (req, res) => {
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
         }
-        console.log(user);
         // Format the response as desired
         const userData = {
             firstname: user.fullname.split(" ")[0],
@@ -182,9 +181,50 @@ const updateUserDetails = async (req, res) => {
 };
 
 
+const updatePreferences = async (req, res) => {
+    try {
+      const userId = req.user._id;
+      const { preferred_category } = req.body;
+  
+      let preferences = await UserPreference.findOne({ user_id: userId });
+  
+      if (!preferences) {
+        preferences = new UserPreference({ user_id: userId, preferred_category });
+      } else {
+        preferences.preferred_category = preferred_category;
+      }
+  
+      await preferences.save();
+  
+      res.status(200).json({ success: true, message: 'Preferences updated successfully' });
+    } catch (error) {
+      console.error('Error updating preferences:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+};
+
+const getPreferences = async (req, res) => {
+    try {
+      const userId = req.user._id;
+      const preferences = await UserPreference.findOne({ user_id: userId })
+  
+      if (!preferences) {
+        return res.status(200).json({ preferred_category: [] });
+      }
+  
+      res.status(200).json({ preferred_category: preferences.preferred_category });
+    } catch (error) {
+      console.error('Error fetching preferences:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+};
+
+
 module.exports = {
     EditUserPreference,
     changePassword,
     getUserDetails,
-    updateUserDetails
+    updateUserDetails,
+    updatePreferences,
+    getPreferences
 }
