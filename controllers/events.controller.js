@@ -57,10 +57,9 @@ const mapEvents = (events) =>
       maxAttendees: event.max_attendees,
       currentAttendees: event.current_attendees,
       category: event.category,
+      discount:event.discount || 0,
       images: event.images || []
-  }));
-
-// getEvents
+}));
 
 const allEvents = async (req, res) => {
     try {
@@ -365,6 +364,7 @@ const EventDetails = async (req, res) => {
                 id: event._id.toString(),
                 event_id: event.event_id,
                 eventAuthor: event.user_id.fullname,
+                profile_picture: event.user_id.profile_picture,
                 title: event.title,
                 description: event.description,
                 location: event.location,
@@ -376,6 +376,7 @@ const EventDetails = async (req, res) => {
                 maxAttendees: event.max_attendees,
                 currentAttendees: event.current_attendees,
                 category: event.category,
+                discount:event.discount || 0,
                 email: event.user_id.email,
                 images: event.images || []
             }
@@ -391,31 +392,39 @@ const EventDetails = async (req, res) => {
 const updateEvent = async (req, res) => {
     try {
         const { id } = req.params;
-        const {
-            title, description, location, date, startTime, endTime, isPaid, ticketPrice,
-            maxAttendees = null, category = [], food_stalls = false
+        const { title, description, location, date, startTime, endTime, isPaid, ticketPrice,
+            maxAttendees = null, category = [], food_stalls = false, discount
         } = req.body;
 
         // Validate required fields
-        if (!title || !description || !location || !date ||!category || !startTime || !endTime || typeof isPaid === 'undefined') {
+        if (!title || !description || !location || !date || discount === undefined || !category || !startTime || !endTime || typeof isPaid === 'undefined') {
             return res.status(400).json({ error: 'Please fill in all required fields.' });
         }
 
-        // Cast strings to booleans
-        const isPaidBoolean = isPaid === 'true' || isPaid === true;  // Convert string "true"/"false" to boolean
+        // Convert strings to booleans
+        const isPaidBoolean = isPaid === 'true' || isPaid === true;
         const foodStallsBoolean = food_stalls === 'true' || food_stalls === true;
 
         // Validate ticket price for paid events
         let price = 0;
+        let dis = 0;
+
         if (isPaidBoolean) {
             price = parseFloat(ticketPrice);
+            dis = parseFloat(discount);
 
+            // Set discount to 0 if invalid
+            if (isNaN(dis) || dis < 0 || dis > 100) {
+                dis = 0;
+            }
+
+            // Validate price
             if (isNaN(price) || price <= 0) {
                 return res.status(400).json({ error: 'Please provide a valid ticket price greater than zero for paid events.' });
             }
         }
 
-        // Parse category array from string if needed
+        // Parse category array if necessary
         const categoryIds = Array.isArray(category) ? category : JSON.parse(category);
 
         // Find the event by event_id or _id
@@ -424,7 +433,7 @@ const updateEvent = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Event not found.' });
         }
 
-        // Update the event fields
+        // Update event fields
         event.title = title;
         event.description = description;
         event.location = location;
@@ -432,8 +441,9 @@ const updateEvent = async (req, res) => {
         event.start_time = startTime;
         event.end_time = endTime;
         event.is_paid = isPaidBoolean;
-        event.ticket_price = isPaidBoolean ? price : 0;
-        event.max_attendees = maxAttendees?Number(maxAttendees):null;
+        event.ticket_price = isPaidBoolean ? parseFloat((price - ((dis*0.01)* price)).toFixed(2)) : 0;
+        event.discount = isPaidBoolean ? dis : 0;
+        event.max_attendees = maxAttendees ? Number(maxAttendees) : null;
         event.category = categoryIds;
         event.food_stalls = foodStallsBoolean;
 
@@ -446,7 +456,6 @@ const updateEvent = async (req, res) => {
             data: {
                 id: event._id.toString(),
                 event_id: event.event_id,
-                eventAuthor: event.user_id.fullname,
                 title: event.title,
                 description: event.description,
                 location: event.location,
@@ -458,6 +467,7 @@ const updateEvent = async (req, res) => {
                 maxAttendees: event.max_attendees,
                 currentAttendees: event.current_attendees,
                 category: event.category,
+                discount: event.discount || 0,
                 images: event.images || [],
             }
         });
@@ -466,6 +476,7 @@ const updateEvent = async (req, res) => {
         res.status(500).json({ error: "Internal Server Error" });
     }
 };
+
 
 const deleteEvent = async (req, res) => {
     try {
@@ -528,113 +539,6 @@ const cancelEvent = async (req, res) => {
     }
 };
 
-// =====================================================================================
-
-// const createEvent = async (req, res) => {
-//     try {
-//         const {
-//             title, description, location, date, startTime, endTime, isPaid, ticketPrice,
-//             maxAttendees = null, category,food_stalls = false
-//         } = req.body;
-    
-//         const images = req.files;
-    
-//         // Validate required fields
-//         if (!title || !description || !location || !date || !startTime || !endTime || typeof isPaid === 'undefined') {
-//             return res.status(400).json({ error: 'Please fill in all required fields.' });
-//         }
-  
-//         // Validate ticket price for paid events
-//         let price = 0;
-//         if (isPaid == true) {
-//             price = parseFloat(ticketPrice);
-
-//             if (isNaN(price) || price <= 0) {
-//                 return res.status(400).json({ error: 'Please provide a valid ticket price greater than zero for paid events.' });
-//             }
-//         }
-  
-//         // Validate if images exist (only if you want to enforce image uploads)
-//         if (!images || images.length === 0) {
-//             return res.status(400).json({ error: 'Please upload at least one image.' });
-//         }
-    
-//         // Generate a new event_id
-//         const lastEvent = await Event.findOne().sort({ event_id: -1 }).exec();
-//         const newEventId = lastEvent ? lastEvent.event_id + 1 : 1000;
-    
-//         // Upload images and get their URLs
-//         let imageUrls = [];
-//         if (images && images.length > 0) {
-//             const uploadPromises = images.map(async (image) => {
-//             const imagePath = path.join(__dirname, '..', 'uploads', image.filename); // Path where multer temporarily stores images
-    
-//             try {
-//                 const imageUrl = await uploadImage(imagePath); // Assuming uploadImage uploads to cloud and returns the URL
-    
-//                 // Clean up temporary file asynchronously
-//                 fs.unlink(imagePath, (err) => {
-//                 if (err) {
-//                     console.error(`Error deleting file: ${imagePath}`, err);
-//                 }
-//                 });
-    
-//                 return imageUrl;
-//             } catch (error) {
-//                 console.error('Error uploading image:', error);
-//                 throw new Error('Image upload failed');
-//             }
-//             });
-    
-//             imageUrls = await Promise.all(uploadPromises);
-//         }
-//         // Ensure category is an array of ObjectId
-//         const categoryIds = Array.isArray(category) ? category : JSON.parse(category);
-    
-//         // Create and save the new event
-//         const newEvent = new Event({
-//             user_id: req.user._id,
-//             event_id: newEventId,
-//             title,
-//             description,
-//             location,
-//             date,
-//             start_time: startTime,
-//             end_time: endTime,
-//             is_paid: isPaid,
-//             ticket_price: isPaid ? ticketPrice : price,
-//             max_attendees: maxAttendees,
-//             images:imageUrls,
-//             category:categoryIds,
-//             food_stalls
-//         });
-    
-//         await newEvent.save(); // Save to the database
-    
-//         res.status(201).json({ message: 'Event created successfully', event:  {
-//                 id: newEvent._id.toString(),
-//                 event_id: newEvent.event_id,
-//                 eventAuthor: newEvent.user_id.fullname,
-//                 title: newEvent.title,
-//                 description: newEvent.description,
-//                 location: newEvent.location,
-//                 date: newEvent.date,
-//                 startTime: newEvent.start_time,
-//                 endTime: newEvent.end_time,
-//                 isPaid: newEvent.is_paid,
-//                 ticketPrice: newEvent.ticket_price,
-//                 maxAttendees: newEvent.max_attendees,
-//                 currentAttendees: newEvent.current_attendees,
-//                 category: newEvent.category,
-//                 images: newEvent.images || []
-//             } });
-
-//     } catch (error) {
-//       console.error('Error creating event:', error);
-//       res.status(500).json({ error: 'Server error' });
-//     }
-// };
-
 const createEvent = async (req, res) => {
     try {
         const {
@@ -664,9 +568,9 @@ const createEvent = async (req, res) => {
         }
 
         // Validate if images exist
-       // if (!images || images.length === 0) {
-      //      return res.status(400).json({ error: 'Please upload at least one image.' });
-       // }
+       if (!images || images.length === 0) {
+           return res.status(400).json({ error: 'Please upload at least one image.' });
+       }
 
         // Generate a new event_id
         const lastEvent = await Event.findOne().sort({ event_id: -1 }).exec();

@@ -59,6 +59,11 @@ const eventSchema = new Schema({
     default: 0
   },
 
+  discount:{
+    type: Number,
+    default: 0
+  },
+
   max_attendees: { 
     type: Number
   },
@@ -72,7 +77,7 @@ const eventSchema = new Schema({
     type: [{
         type: Schema.Types.ObjectId,
         ref: "User",
-    }], 
+    }],
     default: [] 
   },
 
