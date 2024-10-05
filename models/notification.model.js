@@ -18,12 +18,7 @@ const notificationSchema = new Schema({
     required: true 
   },
 
-  sent_at: { 
-    type: Date, 
-    default: Date.now 
-  },
-
-  is_read: { 
+  isRead: { 
     type: Boolean,
     default: false
   }

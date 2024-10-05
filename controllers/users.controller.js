@@ -4,6 +4,7 @@ const UserPreference = require("../models/userpreference.model");
 const { uploadImage } = require("../utils/azureBlob");
 const path = require('path');
 const fs = require('fs');
+const Notification = require("../models/notification.model");
 
 const changePassword = async (req, res) => {
     try {
@@ -186,11 +187,91 @@ const getPreferences = async (req, res) => {
     }
 };
 
+const getNotifications = async (req, res) => {
+    try {
+        const userId = req.user._id;
+
+        const notifications = await Notification.find({ user_id:userId }).sort({ createdAt: -1 }).populate("event_id");
+
+        // console.log(notifications);
+        res.status(200).json({ success: true, data: notifications });
+    } catch (error) {
+        console.log("error at get notifications ", error)
+        res.status(500).json({ error: 'Error fetching notifications.' });
+    }
+};
+
+const deleteNotification = async (req, res) => {
+    try {
+        const userId = req.user._id; 
+
+        const notificationId = req.params.id;
+
+        // Find and delete the notification
+        const result = await Notification.findOneAndDelete({
+            _id: notificationId,
+            user_id: userId 
+        });
+
+        if (!result) {
+            return res.status(404).json({ success: false, message: 'Notification not found.' });
+        }
+
+        res.status(200).json({ success: true, message: 'Notification deleted successfully.' });
+    } catch (error) {
+        console.log("Error deleting notification: ", error);
+        res.status(500).json({ error: 'Error deleting notification.' });
+    }
+};
+
+
+const getNotificationsNoRead = async (req, res) => {
+    try {
+        // Check if user is authenticated
+        if (!req.user || !req.user._id) {
+            return res.status(400).json({ error: 'User not authenticated.' });
+        }
+
+        const userId = req.user._id;
+
+        // Fetch notifications where user_id matches and isRead is either false or undefined
+        const notifications = await Notification.find({
+            user_id: userId,
+            $or: [{ isRead: false }, { isRead: { $exists: false } }]
+        });
+
+        // Respond with the fetched notifications
+        res.status(200).json({ success: true, notifications });
+    } catch (error) {
+        console.log("Error at get notifications: ", error);
+        res.status(500).json({ error: 'Error fetching notifications.' });
+    }
+};
+
+
+const markAsRead = async (req, res) => {
+    try {
+        const userId = req.user._id;
+
+        await Notification.updateMany({user_id: userId, $or: [{ isRead: false }, { isRead: { $exists: false } }]},{ $set: { isRead: true }});
+
+        res.status(200).json({ success: true, message: 'Notifications marked as read.' });
+    } catch (error) {
+        console.log("Error at marking notifications as read: ", error);
+        res.status(500).json({ error: 'Error marking notifications as read.' });
+    }
+};
+
+
 
 module.exports = {
     changePassword,
     getUserDetails,
     updateUserDetails,
     updatePreferences,
-    getPreferences
+    getPreferences,
+    getNotifications,
+    markAsRead,
+    getNotificationsNoRead,
+    deleteNotification
 }

@@ -1,9 +1,8 @@
 const User = require("../models/user.model");
-const crypto = require('crypto');
 const bcrypt = require("bcryptjs");
-const transporter = require('../utils/transport');
 const generateTokenAndSetCookie = require("../utils/generateToken");
 const admin = require('../config/firebase');
+const { sendEmail } = require("../utils/nodemail.util");
 
 const login = async (req, res) => {
     try {
@@ -168,14 +167,12 @@ const forgotPassword = async (req, res) => {
             `,
         };
 
-        transporter.sendMail(mailOptions, (err, info) => {
-            if (err) {
-                console.error('Error sending email: ', err);
-                return res.status(500).json({ error: 'Error sending email' });
-            }
+        const response = await sendEmail(email,mailOptions.subject,mailOptions.html);
+        if (response.success) {
             res.status(200).json({ message: 'Password reset email sent' });
-        });
-
+        } else {
+            res.status(500).json({ message: 'Error sending email', error: result.error });
+        }
     } catch (error) {
         console.error("Error in forgotPassword controller:", error.message);
         res.status(500).json({ error: "Internal Server Error" });
@@ -186,7 +183,6 @@ const resetPassword = async (req, res) => {
     try {
         const { resetToken } = req.params;
         const { email } = req.body;
-        console.log(resetToken,email);
 
         if (!resetToken || !email) {
             return res.status(400).json({ error: "Reset token and email are required" });
