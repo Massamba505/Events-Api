@@ -5,45 +5,6 @@ const { uploadImage } = require("../utils/azureBlob");
 const path = require('path');
 const fs = require('fs');
 
-const EditUserPreference = async(req,res)=>{
-    try {
-        const { preferred_category } = req.body;
-
-        const user_id = req.user._id;
-
-        if (!Array.isArray(preferred_category)) {
-            return res.status(400).json({ error: "preferred_categories are required" });
-        }
-
-        if(!preferred_category){
-            preferred_category = [];
-        }
-
-        const userExists = await User.findById(user_id);
-        if (!userExists) {
-            return res.status(404).json({ error: "User not found" });
-        }
-
-        let usersPreference = await UserPreference.findOne({ user_id });
-
-        if (usersPreference) {
-            usersPreference.preferred_category = preferred_category;
-        } else {
-            usersPreference = new UserPreference({
-                user_id,
-                preferred_category
-            });
-        }
-
-        await usersPreference.save();
-
-        res.status(200).json({ message: "Preferences updated successfully" });
-    } catch (error) {
-        console.error('Error in updating preferences: ', error.message);
-        res.status(500).json({ error: "Internal Server Error" });
-    }
-}
-
 const changePassword = async (req, res) => {
     try {
         const { oldPassword, newPassword } = req.body;
@@ -88,20 +49,27 @@ const getUserDetails = async (req, res) => {
     try {
         const userId = req.user._id;
 
-        const user = await User.findById(userId).select('fullname email about profile_picture push_notifications');
+        // Select the fields you need, including 'comments'
+        const user = await User.findById(userId).select('fullname email about profile_picture push_notifications comments');
 
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
         }
-        // Format the response as desired
+
+        // Ensure 'comments' exists and is a boolean, defaulting to false if undefined
+        if (user.comments === undefined) {
+            user.comments = false;  // Set a default value if it's missing
+            await user.save();
+        }
+
         const userData = {
             firstname: user.fullname.split(" ")[0],
-            lastname: user.fullname.split(" ")[1],
+            lastname: user.fullname.split(" ")[1] || '',
             email: user.email,
-            about: user.about || '', // Optional, if 'about' field is present
-            photoUrl: user.profile_picture || '', // Photo URL
-            push_notifications: user.push_notifications || {}, // If user has notification preferences
-            comments:user.comments || true
+            about: user.about || '',  // Optional, if 'about' field is present
+            photoUrl: user.profile_picture || '',  // Photo URL
+            push_notifications: user.push_notifications || {},  // Notification preferences
+            comments: user.comments // Boolean field for comments
         };
 
         res.status(200).json(userData);
@@ -117,8 +85,9 @@ const updateUserDetails = async (req, res) => {
         const { fullname, email, about, push_notifications, comments } = req.body;
         const imageFile = req.file; // Handle image upload (can be null)
 
+        // Validate that at least one field is provided
         if (!fullname && !email && !about && push_notifications === undefined && comments === undefined && !imageFile) {
-            return res.status(400).json({ error: 'At least one field (fullname, email, about, push notifications, or comments) must be provided.' });
+            return res.status(200).json({ error: 'Nothing Updated.' });
         }
 
         // Initialize the updateFields object
@@ -128,14 +97,13 @@ const updateUserDetails = async (req, res) => {
         if (fullname) updateFields.fullname = fullname;
         if (email) updateFields.email = email;
         if (about) updateFields.about = about;
-        if (push_notifications !== undefined) updateFields.push_notifications = push_notifications; // Ensure we handle boolean values
+        if (push_notifications !== undefined) updateFields.push_notifications = push_notifications; // Handle boolean values
         
-        // Handle comments: convert 'true'/'false' strings to boolean
+        // Handle comments: Convert 'true'/'false' strings to boolean
         if (comments !== undefined) {
             updateFields.comments = comments === 'true'; // Convert to boolean
         }
 
-        console.log(updateFields);
         let imageUrl = null; // Default to null if no new image is provided
         if (imageFile) {
             const imagePath = path.join(__dirname, '..', 'uploads', imageFile.filename); // Path where multer temporarily stores images
@@ -143,6 +111,7 @@ const updateUserDetails = async (req, res) => {
             // Upload image and get its URL
             imageUrl = await uploadImage(imagePath);
             updateFields.profile_picture = imageUrl;
+
             // Clean up temporary file asynchronously
             fs.unlink(imagePath, (err) => {
                 if (err) {
@@ -172,14 +141,12 @@ const updateUserDetails = async (req, res) => {
             push_notifications: updatedUser.push_notifications || {},
             comments: updatedUser.comments // This is already a boolean
         };
-
-        res.status(200).json(userData);
+        res.status(201).json(userData);
     } catch (error) {
         console.error('Error updating user:', error.message);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 };
-
 
 const updatePreferences = async (req, res) => {
     try {
@@ -221,7 +188,6 @@ const getPreferences = async (req, res) => {
 
 
 module.exports = {
-    EditUserPreference,
     changePassword,
     getUserDetails,
     updateUserDetails,
