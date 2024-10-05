@@ -155,9 +155,10 @@ const buyTicket2 = async (req, res) => {
     }
 
     // Create a product in Stripe for the event if it doesn't already exist
+    console.log(event.images);
     const product = await stripe.products.create({
       name: event.title,
-      images: [event.images[0]], // Ensure this is an array
+      images: event.images && event.images.length > 0 ? [event.images[0]] : []
     });
 
     // Create a price for the product
@@ -176,7 +177,7 @@ const buyTicket2 = async (req, res) => {
       }],
       mode: 'payment',
       success_url: `${process.env.BASE_URL}/tickets/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.BASE_URL}/tickets/cancel`,
+      cancel_url: `${process.env.BASE_URL}/tickets/cancel?session_id={CHECKOUT_SESSION_ID}`,
     });
 
     // Create the ticket with payment status as Pending
@@ -400,7 +401,7 @@ const getAllTickets = async (req, res) => {
   const userId = req.user._id;
 
   try {
-    const tickets = await Ticket.find({user_id:userId}).populate('event_id').sort({ createdAt: -1 });
+    const tickets = await Ticket.find({user_id:userId}).sort({ createdAt: -1 }).populate('event_id');
     res.status(200).json(tickets);
   } catch (error) {
     console.error('Error fetching user tickets:', error);
