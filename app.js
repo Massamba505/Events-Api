@@ -6,7 +6,7 @@ var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 var cors = require("cors");
 
-const indexRouter = require('./routes/index');
+// const indexRouter = require('./routes/index');
 const authRouter = require('./routes/auth.route');
 const userRouter = require('./routes/user.route');
 const eventRouter = require('./routes/event.route');
@@ -30,7 +30,7 @@ app.use(cors({
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-app.use('/api', indexRouter);
+// app.use('/api', indexRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/user', userRouter);
 app.use('/api/events', eventRouter);

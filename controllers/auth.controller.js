@@ -29,12 +29,7 @@ const login = async (req, res) => {
             const token = generateTokenAndSetCookie(user._id, res);
 
             return res.status(201).json({
-                message: "Login successful",
-                token,
-                fullname:user.fullname,
-                email:user.email,
-                profile_picture:user.profile_picture,
-                role: user.role
+                token
             });
         }
 
@@ -52,11 +47,7 @@ const login = async (req, res) => {
         const token = generateTokenAndSetCookie(findUser._id, res);
 
         res.status(201).json({
-            message: "Login successful",
             token,
-            fullname:findUser.fullname,
-            email:findUser.email,
-            role: findUser.role
         });
 
     } catch (error) {
@@ -108,12 +99,7 @@ const signup = async (req, res) => {
         const token = generateTokenAndSetCookie(newUser._id, res);
 
         res.status(201).json({
-            message: "SignUp successful",
-            token,
-            fullname,
-            email,
-            profile_picture,
-            role: newUser.role
+            message: "Signup successful! Please login."
         });
 
     } catch (error) {
