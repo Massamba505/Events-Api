@@ -1,100 +1,113 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 const { Schema } = mongoose;
 
-const eventSchema = new Schema({
-  user_id: { 
-    type: Schema.Types.ObjectId,
-    ref: "User",
-    required: true 
-  },
+const eventSchema = new Schema(
+  {
+    status: {
+      type: Number,
+      default: 1,
+    },
 
-  event_id: { 
-    type: Number, 
-    unique: true,
-    required: true 
-  },
+    user_id: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
 
-  title: { 
-    type: String, 
-    required: true 
-  },
+    event_id: {
+      type: Number,
+      unique: true,
+      required: true,
+    },
 
-  description: { 
-    type: String, 
-    required: true 
-  },
+    title: {
+      type: String,
+      required: true,
+    },
 
-  location: { 
-    type: String, 
-    required: true 
-  },
+    description: {
+      type: String,
+      required: true,
+    },
 
-  date: { 
-    type: String, 
-    required: true 
-  },
+    location: {
+      type: String,
+      required: true,
+    },
 
-  start_time: { 
-    type: String, 
-    required: true 
-  },
-  
-  end_time: { 
-    type: String, 
-    required: true 
-  },
+    date: {
+      type: String,
+      required: true,
+    },
 
-  is_paid: { 
-    type: Boolean, 
-    required: true 
-  },
+    start_time: {
+      type: String,
+      required: true,
+    },
 
-  food_stalls: { 
-    type: Boolean,
-    default:false
-  },
+    end_time: {
+      type: String,
+      required: true,
+    },
 
-  ticket_price: { 
-    type: Number,
-    default: 0
-  },
+    is_paid: {
+      type: Boolean,
+      required: true,
+    },
 
-  discount:{
-    type: Number,
-    default: 0
-  },
+    food_stalls: {
+      type: Boolean,
+      default: false,
+    },
 
-  max_attendees: { 
-    type: Number
-  },
+    ticket_price: {
+      type: Number,
+      default: 0,
+    },
 
-  current_attendees: { 
-    type: Number, 
-    default: 0 
-  },
-  
-  current_attendee_list: { 
-    type: [{
+    discount: {
+      type: Number,
+      default: 0,
+    },
+
+    max_attendees: {
+      type: Number,
+    },
+
+    current_attendees: {
+      type: Number,
+      default: 0,
+    },
+
+    current_attendee_list: {
+      type: [
+        {
+          type: Schema.Types.ObjectId,
+          ref: "User",
+        },
+      ],
+      default: [],
+    },
+
+    images: [
+      {
+        type: String,
+      },
+    ],
+
+    isCancelled: {
+      type: Boolean,
+      default: false,
+    },
+
+    category: [
+      {
         type: Schema.Types.ObjectId,
-        ref: "User",
-    }],
-    default: [] 
+        ref: "EventCategory",
+      },
+    ],
   },
+  { timestamps: true }
+);
 
-  images: [{ 
-    type: String 
-  }],
-
-  isCancelled: {
-    type: Boolean,
-    default: false,
-  },
-
-  category: [{ 
-    type: Schema.Types.ObjectId, 
-    ref: 'EventCategory'  
-  }],
-
-}, { timestamps: true });
-
-module.exports = mongoose.model('Event', eventSchema);
+module.exports = mongoose.model("Event", eventSchema);
