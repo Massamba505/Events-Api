@@ -64,6 +64,7 @@ const getUserDetails = async (req, res) => {
         }
 
         const userData = {
+            role:user.role,
             firstname: user.fullname.split(" ")[0],
             lastname: user.fullname.split(" ")[1] || '',
             email: user.email,
