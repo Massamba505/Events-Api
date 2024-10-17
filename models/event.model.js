@@ -5,7 +5,7 @@ const eventSchema = new Schema(
   {
     status: {
       type: Number,
-      default: 1,
+      default: 0,
     },
 
     user_id: {
