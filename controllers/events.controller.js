@@ -31,6 +31,7 @@ const mapEvents = (events) =>
     maxAttendees: event.max_attendees,
     currentAttendees: event.current_attendees,
     category: event.category,
+    status:event.status,
     isCancelled: event.isCancelled || false,
     discount: event.discount || 0,
     images: event.images || [],
@@ -39,7 +40,7 @@ const mapEvents = (events) =>
 
 const allEvents = async (req, res) => {
   try {
-    const events = await Event.find({ isCancelled: false })
+    const events = await Event.find({ isCancelled: false, status:"approved"})// 
       .sort({ createdAt: -1 })
       .populate("user_id", "fullname email profile_picture")
       .populate("category");
@@ -59,7 +60,7 @@ const allEvents = async (req, res) => {
 
 const Calender = async (req, res) => {
   try {
-    const events = await Event.find()
+    const events = await Event.find({status:"approved"})
       .sort({ createdAt: -1 })
       .populate("user_id", "fullname email profile_picture")
       .populate("category");
@@ -94,7 +95,7 @@ const MyEvents = async (req, res) => {
 const allUpcomingEvents = async (req, res) => {
   try {
     const user_id = req.user ? req.user._id : null;
-    let events = await Event.find({})
+    let events = await Event.find({status:"approved"})
       .populate("user_id", "fullname email profile_picture")
       .populate("category");
 
@@ -138,7 +139,7 @@ const allInProgressEvents = async (req, res) => {
   try {
     const user_id = req.user ? req.user._id : null;
 
-    let events = await Event.find({})
+    let events = await Event.find({status:"approved"})
       .populate("user_id", "fullname email profile_picture")
       .populate("category");
 
@@ -185,7 +186,7 @@ const allPastEvents = async (req, res) => {
   try {
     const user_id = req.user ? req.user._id : null;
 
-    let events = await Event.find({})
+    let events = await Event.find({status:"approved"})
       .populate("user_id", "fullname email profile_picture")
       .populate("category");
 
@@ -229,7 +230,7 @@ const allPastEvents = async (req, res) => {
 
 const getPopularEvents = async (req, res) => {
   try {
-    let events = await Event.find({})
+    let events = await Event.find({status:"approved"})
       .populate("user_id", "fullname email profile_picture")
       .populate("category");
 
@@ -270,6 +271,7 @@ const getRecommendedEvents = async (req, res) => {
     }
 
     const events = await Event.find({
+      status:"approved",
       category: { $in: userPreference.preferred_category },
     })
       .populate("user_id", "fullname email profile_picture")
@@ -300,7 +302,7 @@ const sort = async (req, res) => {
 
     const user_id = req.user ? req.user._id : null;
 
-    let events = await Event.find({}).populate({
+    let events = await Event.find({status:"approved"}).populate({
       path: "user_id",
       select: "fullname",
     });
@@ -409,6 +411,7 @@ const EventDetails = async (req, res) => {
         discount: event.discount || 0,
         email: event.user_id.email,
         images: event.images || [],
+        status: event.status,
       },
     });
   } catch (error) {
@@ -515,7 +518,7 @@ const updateEvent = async (req, res) => {
     event.max_attendees = maxAttendees ? Number(maxAttendees) : null;
     event.category = categoryIds;
     event.food_stalls = foodStallsBoolean;
-    event.status = status;
+    // event.status = status;
 
     // Save the updated event
     await event.save();
@@ -633,6 +636,7 @@ const cancelEvent = async (req, res) => {
     const event =
       (await Event.findOne({ event_id: id })) || (await Event.findById(id));
     event.isCancelled = true;
+    event.status = "cancelled";
     await event.save();
 
     if (!event) {
@@ -667,7 +671,6 @@ const createEvent = async (req, res) => {
       maxAttendees = null,
       category,
       food_stalls = false,
-      status = 0,
     } = req.body;
 
     const images = req.files;
@@ -764,6 +767,10 @@ const createEvent = async (req, res) => {
       isCancelled: false,
       food_stalls: foodStallsBoolean,
     });
+
+    if(['organizer','admin'].includes(req.user.role)){
+      newEvent.status = "accepted";
+    }
 
     await newEvent.save(); // Save to the database
 
@@ -983,6 +990,61 @@ const search2 = async (req, res) => {
   }
 };
 
+//=====================admin===========================
+const changeEventStatus = async (req, res) => {
+  const { event_id } = req.params;
+  const { status } = req.body; 
+  // I will add admin validation later
+  const validStatuses = ['pending', 'rejected', 'approved'];
+  if (!validStatuses.includes(status)) {
+    return res.status(400).json({ message: 'Invalid status provided.' });
+  }
+
+  try {
+    const updatedEvent = await Event.findOneAndUpdate(
+      { event_id },
+      { status },
+      { new: true} 
+    );
+
+    // Check if the event was found
+    if (!updatedEvent) {
+      return res.status(404).json({ message: 'Event not found.' });
+    }
+
+    // Respond with the updated event
+    return res.status(200).json({ message: 'Status updated successfully.', event: updatedEvent });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: 'Server error. Please try again later.' });
+  }
+};
+
+const pendingEvents = async (req, res) => {
+  try {
+    // Fetch the updated events with status 'pending'
+    const events = await Event.find({ 
+      isCancelled: false, 
+      status: "pending" 
+    })
+    .sort({ createdAt: -1 })
+    .populate("user_id", "fullname email profile_picture")
+    .populate("category");
+
+    const allevents = mapEvents(events);
+
+    res.status(200).json({
+      success: true,
+      count: allevents.length,
+      data: allevents,
+    });
+  } catch (error) {
+    console.error("Error in fetching pending events: ", error.message);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+
 module.exports = {
   createEvent,
   updateEvent,
@@ -1001,4 +1063,7 @@ module.exports = {
   getPopularEvents,
   getRecommendedEvents,
   Calender,
+  // ======================admin=======================
+  changeEventStatus,
+  pendingEvents
 };

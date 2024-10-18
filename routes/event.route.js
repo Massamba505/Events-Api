@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { authenticate } = require('../middlewares/protect.middleware');
-const { allEvents, allUpcomingEvents, allInProgressEvents, allPastEvents, sort, EventDetails, createEvent,createEventNoImage, updateEvent, cancelEvent, search2, deleteEvent, MyEvents, getPopularEvents, getRecommendedEvents, Calender } = require('../controllers/events.controller');
+const { allEvents, allUpcomingEvents, allInProgressEvents, allPastEvents, sort, EventDetails, createEvent,createEventNoImage, updateEvent, cancelEvent, search2, deleteEvent, MyEvents, getPopularEvents, getRecommendedEvents, Calender, changeEventStatus, pendingEvents } = require('../controllers/events.controller');
 const upload = require("../utils/multerConfig");
 
 // Event routes (unprotected)
@@ -25,5 +25,11 @@ router.post('/:id/cancel', cancelEvent);
 // router.get('/myevents',authenticate, MyEvents);
 
 router.get('/:id',EventDetails);
+
+
+// ============admin==================
+// Update event status route
+router.put('/:event_id/status',authenticate, changeEventStatus);
+router.get('/admin/pending', pendingEvents);//authenticate,
 
 module.exports = router;

@@ -3,11 +3,6 @@ const { Schema } = mongoose;
 
 const eventSchema = new Schema(
   {
-    status: {
-      type: Number,
-      default: 0,
-    },
-
     user_id: {
       type: Schema.Types.ObjectId,
       ref: "User",
@@ -106,6 +101,12 @@ const eventSchema = new Schema(
         ref: "EventCategory",
       },
     ],
+    status: {
+      type: String,
+      enum: ['pending','rejected','approved'],
+      default: 'pending'
+    },
+
   },
   { timestamps: true }
 );
