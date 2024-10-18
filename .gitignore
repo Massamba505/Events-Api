@@ -1,3 +1,117 @@
-node_modules
+# Node modules
+node_modules/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
 .env
-.vercel
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Build directories
+dist/
+build/
+out/
+public/static/
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Icon?
+Desktop.ini
+
+# Coverage directory for testing
+coverage/
+
+# Testing files
+test/
+*.spec.js
+*.test.js
+__tests__/
+
+# IDE specific files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# MacOS specific
+*.DS_Store
+
+# Linux specific
+*~
+
+# Windows specific
+*.lnk
+*.bat
+
+# React Native
+.expo/
+.expo-shared/
+npm-debug.log*
+
+# JetBrains IDEs
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# TypeScript
+*.tsbuildinfo
+
+# Build output
+/dist
+/build
+/out
+/public/static/
+
+# Package distribution
+*.tgz
+*.zip
+*.tar.gz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# VS Code settings
+.vscode/
+
+# Next.js
+.next/
+out/
+
+# Storybook
+out/
+.storybook-out/
+
+# Svelte
+.svelte-kit/
+
+# GraphQL
+*.graphql
+*.gql
+
+# Other
+*.lock
+
+# Azure specific files
+*.publishsettings
+*.azureprofile
+deploy/
+
+# Vercel specific files
+.vercel/
