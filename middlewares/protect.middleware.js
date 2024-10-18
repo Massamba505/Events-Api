@@ -24,7 +24,7 @@ const authenticate = async (req, res, next) => {
     }
 
     // 5. Find the user associated with the token
-    const user = await User.findById(decoded.userId);
+    const user = await User.findById(decoded.userId).select("-password");
     if (!user) {
       return res.status(401).json({ error: "User not found" });
     }
