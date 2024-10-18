@@ -30,7 +30,7 @@ const login = async (req, res) => {
       const token = generateTokenAndSetCookie(user._id, res);
 
       return res.status(201).json({
-        token,
+        token
       });
     }
 
@@ -51,8 +51,7 @@ const login = async (req, res) => {
     const token = generateTokenAndSetCookie(findUser._id, res);
 
     res.status(201).json({
-      token,
-      role: findUser.role,
+      token
     });
   } catch (error) {
     console.log("Error in login controller", error.message);

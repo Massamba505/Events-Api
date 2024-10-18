@@ -48,19 +48,10 @@ const changePassword = async (req, res) => {
 
 const getUserDetails = async (req, res) => {
     try {
-        const userId = req.user._id;
-
-        // Select the fields you need, including 'comments'
-        const user = await User.findById(userId).select('fullname email about profile_picture push_notifications comments');
+        const user = req.user;
 
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
-        }
-
-        // Ensure 'comments' exists and is a boolean, defaulting to false if undefined
-        if (user.comments === undefined) {
-            user.comments = false;  // Set a default value if it's missing
-            await user.save();
         }
 
         const userData = {
@@ -68,15 +59,39 @@ const getUserDetails = async (req, res) => {
             firstname: user.fullname.split(" ")[0],
             lastname: user.fullname.split(" ")[1] || '',
             email: user.email,
-            about: user.about || '',  // Optional, if 'about' field is present
-            photoUrl: user.profile_picture || '',  // Photo URL
-            push_notifications: user.push_notifications || {},  // Notification preferences
-            comments: user.comments // Boolean field for comments
+            about: user.about || '',
+            photoUrl: user.profile_picture || '',
+            push_notifications: user.push_notifications || {},
+            comments: user.comments
         };
-
         res.status(200).json(userData);
     } catch (error) {
         console.error('Error fetching user by ID:', error.message);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+};
+
+const getAllUserDetails = async (req, res) => {
+    try {
+        const users = await User.find({}).sort({createdAt:-1}).select('role fullname email about profile_picture');
+
+        if (!users || users.length === 0) {
+            return res.status(200).json([]);
+        }
+
+        // Map over the users to create the desired response format
+        const userData = users.map(user => ({
+            _id:user._id,
+            role: user.role,
+            fullname: user.fullname,
+            email: user.email,
+            about: user.about || '',  
+            profile_picture: user.profile_picture || '' 
+        }));
+
+        res.status(200).json(userData);
+    } catch (error) {
+        console.error('Error fetching users:', error.message);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 };
@@ -263,7 +278,40 @@ const markAsRead = async (req, res) => {
     }
 };
 
-
+const updateUserRole = async (req, res) => {
+    try {
+      const { role } = req.body;
+      const userId = req.params.userId;
+  
+      // Check if role is valid
+      const validRoles = ['organizer', 'admin', 'user'];
+      if (!validRoles.includes(role)) {
+        return res.status(400).json({ error: 'Invalid role' });
+      }
+  
+      // Find the user by ID and update the role
+      const newuser = await User.findByIdAndUpdate(
+        userId,
+        { role },
+        { new: true } // Return the updated document
+      );
+  
+      if (!newuser) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      return res.json({
+        _id:newuser._id,
+        role: newuser.role,
+        fullname: newuser.fullname,
+        email: newuser.email,
+        about: newuser.about || '',  
+        profile_picture: newuser.profile_picture || '' 
+    });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ error: 'Server error' });
+    }
+};
 
 module.exports = {
     changePassword,
@@ -274,5 +322,7 @@ module.exports = {
     getNotifications,
     markAsRead,
     getNotificationsNoRead,
-    deleteNotification
+    deleteNotification,
+    getAllUserDetails,
+    updateUserRole
 }

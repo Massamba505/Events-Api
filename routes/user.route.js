@@ -1,11 +1,15 @@
 const express = require('express');
 const router = express.Router();
-const { changePassword, getUserDetails, updateUserDetails, getPreferences, updatePreferences, getNotifications, getNotificationsNoRead, markAsRead, deleteNotification } = require('../controllers/users.controller');
+const { changePassword, getUserDetails, updateUserDetails, getPreferences, updatePreferences, getNotifications, getNotificationsNoRead, markAsRead, deleteNotification, getAllUserDetails,updateUserRole } = require('../controllers/users.controller');
 
 const { authenticate } = require('../middlewares/protect.middleware');
 const upload = require('../utils/multerConfig');
 
 router.get('/', authenticate, getUserDetails);
+
+router.get('/all', authenticate, getAllUserDetails);
+
+router.put('/:userId/role', updateUserRole);
 
 router.put('/update', authenticate, upload.single('image'), updateUserDetails);
 
