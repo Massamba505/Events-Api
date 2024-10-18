@@ -901,30 +901,6 @@ const createEventNoImage = async (req, res) => {
   }
 };
 
-const search = async (req, res) => {
-  const { query } = req.query; // Extract the search query from the query parameters
-
-  if (!query) {
-    return res.status(400).json({ error: "Query parameter is required" });
-  }
-
-  try {
-    // Disable caching for this response
-    res.set("Cache-Control", "no-store");
-
-    const events = await Event.find({
-      $or: [
-        { title: { $regex: query, $options: "i" } }, // Case-insensitive search for title
-        { description: { $regex: query, $options: "i" } }, // Case-insensitive search for description
-      ],
-    });
-
-    res.status(200).json({ data: mapEvents(events) }); // Send back the found events
-  } catch (error) {
-    console.error("Error fetching events:", error);
-    res.status(500).json({ error: "Server error" });
-  }
-};
 
 const search2 = async (req, res) => {
   const { query } = req.query;
@@ -983,7 +959,12 @@ const search2 = async (req, res) => {
       category: event.categoryDetails, // Attach category details (populated)
     }));
 
-    res.status(200).json({ data: mapEvents(eventsWithDetails) });
+    const list = mapEvents(eventsWithDetails);
+
+    res.status(200).json({ 
+      "success": true,
+      "count": list.length,
+      data: list });
   } catch (error) {
     console.error("Error fetching events:", error);
     res.status(500).json({ error: "Server error" });
@@ -1058,7 +1039,6 @@ module.exports = {
   sort,
   cancelEvent,
   search2,
-  search,
   MyEvents,
   getPopularEvents,
   getRecommendedEvents,

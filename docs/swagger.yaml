@@ -1,0 +1,1451 @@
+openapi: 3.0.0
+info:
+  title: Events and Activities API Documentation
+  version: 1.0.0
+  description: API for managing events including fetching, searching, and sorting.
+servers:
+  - url: https://eventsapi3a.azurewebsites.net
+
+paths:
+  /api/events:
+    get:
+      tags: 
+        - "Events"
+      summary: Retrieve all approved events
+      description: Fetch a list of all events that have approved status.
+      responses:
+        '200':
+          description: A list of approved events
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  count:
+                    type: integer
+                    example: 5
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        event_id:
+                          type: number
+                        eventAuthor:
+                          type: string
+                        email:
+                          type: string
+                        title:
+                          type: string
+                        description:
+                          type: string
+                        location:
+                          type: string
+                        date:
+                          type: string
+                          format: date
+                        startTime:
+                          type: string
+                        endTime:
+                          type: string
+                        isPaid:
+                          type: boolean
+                        ticketPrice:
+                          type: number
+                        maxAttendees:
+                          type: integer
+                        currentAttendees:
+                          type: integer
+                        category:
+                          type: string
+                        status:
+                          type: string
+                        isCancelled:
+                          type: boolean
+                        discount:
+                          type: number
+                        images:
+                          type: array
+                          items:
+                            type: string
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Internal Server Error"
+  
+  /api/events/calender:
+    get:
+      tags:
+        - "Events"
+      summary: Retrieve all events for the calendar
+      description: Fetch all approved events for calendar view.
+      responses:
+        '200':
+          description: A list of events for the calendar
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  count:
+                    type: integer
+                  data:
+                    type: array
+                    items:
+                      type: object
+        '500':
+          description: Internal Server Error
+
+  /api/events/upcoming-events:
+    get:
+      tags:
+        - "Events"
+      summary: Retrieve all upcoming events
+      description: Fetch a list of all upcoming approved events.
+      responses:
+        '200':
+          description: A list of upcoming events
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  count:
+                    type: integer
+                  data:
+                    type: array
+                    items:
+                      type: object
+        '500':
+          description: Internal Server Error
+
+  /api/events/inprogress-events:
+    get:
+      tags:
+        - "Events"
+      summary: Retrieve all in-progress events
+      description: Fetch a list of all in-progress approved events.
+      responses:
+        '200':
+          description: A list of in-progress events
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  count:
+                    type: integer
+                  data:
+                    type: array
+                    items:
+                      type: object
+        '500':
+          description: Internal Server Error
+
+  /api/events/past-events:
+    get:
+      tags:
+        - "Events"
+      summary: Retrieve all past events
+      description: Fetch a list of all past approved events.
+      responses:
+        '200':
+          description: A list of past events
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  count:
+                    type: integer
+                  data:
+                    type: array
+                    items:
+                      type: object
+        '500':
+          description: Internal Server Error
+
+  /api/events/popular:
+    get:
+      tags:
+        - "Events"
+      summary: Retrieve popular events
+      description: Fetch a list of the top 8 most popular approved events based on attendees.
+      responses:
+        '200':
+          description: A list of popular events
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  count:
+                    type: integer
+                  data:
+                    type: array
+                    items:
+                      type: object
+        '500':
+          description: Internal Server Error
+
+  /api/events/search:
+    get:
+      tags:
+        - "Events"
+      summary: Search for events
+      description: Search for events based on criteria.
+      parameters:
+        - name: query
+          in: query
+          description: Search query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  count:
+                    type: integer
+                  data:
+                    type: array
+                    items:
+                      type: object
+        '500':
+          description: Internal Server Error
+
+  /api/events/sort-by:
+    get:
+      tags:
+        - "Events"
+      summary: Sort events
+      description: Sort events based on criteria such as title, ticket price, or date.
+      parameters:
+        - name: criteria
+          in: query
+          description: Sorting criteria (e.g., title, ticketprice, date)
+          schema:
+            type: string
+        - name: order
+          in: query
+          description: Sorting order (asc or desc)
+          schema:
+            type: string
+            enum: [asc, desc]
+      responses:
+        '200':
+          description: Sorted events
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  count:
+                    type: integer
+                  data:
+                    type: array
+                    items:
+                      type: object
+        '500':
+          description: Internal Server Error
+  
+  /api/events/myevents:
+    get:
+      summary: Get user's events
+      security:
+        - BearerAuth: []
+      tags:
+        - Events
+      responses:
+        '200':
+          description: Successfully fetched events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Event'
+        '500':
+          description: Server error
+
+  /api/events/recommendation:
+    get:
+      summary: Get recommended events based on user preferences
+      security:
+        - BearerAuth: []
+      tags:
+        - Events
+      responses:
+        '200':
+          description: Successfully fetched recommended events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Event'
+        '401':
+          description: User not authenticated
+        '500':
+          description: Server error
+
+  /api/events/new:
+    post:
+      summary: Create a new event
+      security:
+        - BearerAuth: []
+      tags:
+        - Events
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                location:
+                  type: string
+                date:
+                  type: string
+                  format: date
+                startTime:
+                  type: string
+                  format: time
+                endTime:
+                  type: string
+                  format: time
+                isPaid:
+                  type: boolean
+                ticketPrice:
+                  type: number
+                maxAttendees:
+                  type: integer
+                category:
+                  type: array
+                  items:
+                    type: string
+                food_stalls:
+                  type: boolean
+                images:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+      responses:
+        '201':
+          description: Event created successfully
+        '400':
+          description: Invalid input
+        '500':
+          description: Server error
+
+  /api/events/update/{id}:
+    put:
+      summary: Update an event
+      security:
+        - BearerAuth: []
+      tags:
+        - Events
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventUpdate'
+      responses:
+        '200':
+          description: Event updated successfully
+        '400':
+          description: Invalid input
+        '404':
+          description: Event not found
+        '500':
+          description: Server error
+
+  /api/events/{id}:
+    delete:
+      summary: Delete an event
+      security:
+        - BearerAuth: []
+      tags:
+        - Events
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Event deleted successfully
+        '404':
+          description: Event not found
+        '500':
+          description: Server error
+
+  /api/events/{id}/cancel:
+    post:
+      summary: Cancel an event
+      security:
+        - BearerAuth: []
+      tags:
+        - Events
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Event cancelled successfully
+        '404':
+          description: Event not found
+        '500':
+          description: Server error
+
+  /api/events/{id}:
+    get:
+      summary: Get event details by ID
+      tags:
+        - Events
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Event details fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+        '404':
+          description: Event not found
+        '500':
+          description: Server error
+
+# ==================================================
+  /api/user:
+    get:
+      summary: Get user details
+      tags:
+        - User
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User details retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  role:
+                    type: string
+                  firstname:
+                    type: string
+                  lastname:
+                    type: string
+                  email:
+                    type: string
+                  about:
+                    type: string
+                  photoUrl:
+                    type: string
+                  push_notifications:
+                    type: object
+                  comments:
+                    type: boolean
+        '404':
+          description: User not found
+        '500':
+          description: Internal server error
+
+  /api/user/all:
+    get:
+      summary: Get all user details
+      tags:
+        - User
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: All user details retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    _id:
+                      type: string
+                    role:
+                      type: string
+                    fullname:
+                      type: string
+                    email:
+                      type: string
+                    about:
+                      type: string
+                    profile_picture:
+                      type: string
+        '500':
+          description: Internal server error
+
+  /api/user/update:
+    put:
+      summary: Update user details
+      tags:
+        - User
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fullname:
+                  type: string
+                email:
+                  type: string
+                about:
+                  type: string
+                push_notifications:
+                  type: object
+                comments:
+                  type: boolean
+      responses:
+        '200':
+          description: User details updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  firstname:
+                    type: string
+                  lastname:
+                    type: string
+                  email:
+                    type: string
+                  about:
+                    type: string
+                  photoUrl:
+                    type: string
+                  push_notifications:
+                    type: object
+                  comments:
+                    type: boolean
+        '400':
+          description: No fields provided for update
+        '404':
+          description: User not found
+        '500':
+          description: Internal server error
+
+  /api/user/new-password:
+    put:
+      summary: Change user password
+      tags:
+        - User
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                oldPassword:
+                  type: string
+                newPassword:
+                  type: string
+      responses:
+        '200':
+          description: Password changed successfully
+        '400':
+          description: Old password and new password are required
+        '404':
+          description: User not found
+        '500':
+          description: Internal server error
+
+  /api/user/preferences:
+    get:
+      summary: Get user preferences
+      tags:
+        - User
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User preferences retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  preferred_category:
+                    type: array
+                    items:
+                      type: string
+        '500':
+          description: Internal server error
+
+    put:
+      summary: Update user preferences
+      tags:
+        - User
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                preferred_category:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: Preferences updated successfully
+        '500':
+          description: Internal server error
+
+  /api/user/notifications:
+    get:
+      summary: Get user notifications
+      tags:
+        - User
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User notifications retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                        user_id:
+                          type: string
+                        message:
+                          type: string
+                        createdAt:
+                          type: string
+                          format: date-time
+        '500':
+          description: Error fetching notifications
+
+  /api/user/notifications/{id}:
+    delete:
+      summary: Delete a notification
+      tags:
+        - User
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID of the notification to delete
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Notification deleted successfully
+        '404':
+          description: Notification not found
+        '500':
+          description: Error deleting notification
+
+  /api/user/notifications/latest:
+    get:
+      summary: Get unread notifications
+      tags:
+        - User
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Unread notifications retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  notifications:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                        user_id:
+                          type: string
+                        message:
+                          type: string
+                        createdAt:
+                          type: string
+                          format: date-time
+        '500':
+          description: Error fetching notifications
+
+  /api/user/notifications/read:
+    get:
+      summary: Mark notifications as read
+      tags:
+        - User
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Notifications marked as read
+        '500':
+          description: Error marking notifications as read
+
+  /api/user/{userId}/role:
+    put:
+      summary: Update user role
+      tags:
+        - User
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          description: ID of the user to update role
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                role:
+                  type: string
+      responses:
+        '200':
+          description: User role updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  _id:
+                    type: string
+                  role:
+                    type: string
+                  fullname:
+                    type: string
+                  email:
+                    type: string
+                  about:
+                    type: string
+                  profile_picture:
+                    type: string
+        '400':
+          description: Invalid role
+        '404':
+          description: User not found
+        '500':
+          description: Server error
+# =============================================
+  /api/tickets/buy:
+    post:
+      tags:
+        - Tickets
+      summary: Buy a ticket
+      description: Allows a user to purchase a ticket for an event.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                eventId:
+                  type: string
+                  description: The ID of the event.
+                ticketType:
+                  type: string
+                  enum: [Paid, RSVP, General Admission, VIP, Early Bird]
+                  description: The type of ticket being purchased.
+                price:
+                  type: number
+                  format: float
+                  description: The price of the ticket (only required for paid tickets).
+                eventDate:
+                  type: string
+                  format: date-time
+                  description: The date of the event.
+              required:
+                - eventId
+                - ticketType
+                - eventDate
+      responses:
+        '200':
+          description: Ticket purchased successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  ticket:
+                    $ref: '#/components/schemas/Ticket'
+        '400':
+          description: Invalid request data.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '404':
+          description: Event not found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+
+  /api/tickets/success/{session_id}:
+    get:
+      tags:
+        - Tickets
+      summary: Confirm payment
+      description: Confirms the payment status of a ticket after a successful Stripe checkout.
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          description: The session ID from Stripe.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Payment confirmed successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  ticket:
+                    $ref: '#/components/schemas/Ticket'
+        '404':
+          description: Ticket not found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '500':
+          description: Server error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+
+  /api/tickets/cancel/{session_id}:
+    get:
+      tags:
+        - Tickets
+      summary: Cancel payment
+      description: Cancels a payment and deletes the associated ticket.
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          description: The session ID from Stripe.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Payment cancelled successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        '404':
+          description: Ticket not found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '500':
+          description: Server error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+
+  /api/tickets/{ticketId}/refund:
+    post:
+      tags:
+        - Tickets
+      summary: Request a refund
+      description: Allows a user to request a refund for a purchased ticket.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: ticketId
+          in: path
+          required: true
+          description: The ID of the ticket to request a refund for.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Refund request submitted successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '404':
+          description: Ticket not found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '400':
+          description: Refund can only be requested for paid tickets.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+
+  /api/tickets/{ticketId}:
+    get:
+      tags:
+        - Tickets
+      summary: Get ticket details
+      description: Retrieves details for a specific ticket.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: ticketId
+          in: path
+          required: true
+          description: The ID of the ticket.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Ticket retrieved successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ticket'
+        '404':
+          description: Ticket not found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+
+  /api/tickets:
+    get:
+      tags:
+        - Tickets
+      summary: Get all tickets for a user
+      description: Retrieves all tickets purchased by the authenticated user.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Tickets retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Ticket'
+        '500':
+          description: Server error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+# =============================================
+  /api/auth/signup:
+    post:
+      summary: User signup
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fullname:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                role:
+                  type: string
+                  enum: [user, organizer, admin]
+      responses:
+        '201':
+          description: Signup successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '500':
+          description: Internal Server Error
+
+  /api/auth/login:
+    post:
+      summary: User login
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                googleIdToken:
+                  type: string
+      responses:
+        '201':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+        '400':
+          description: Invalid email or password
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '500':
+          description: Internal Server Error
+
+  /api/auth/logout:
+    post:
+      summary: User logout
+      tags:
+        - Authentication
+      responses:
+        '200':
+          description: Logged out successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '500':
+          description: Internal Server Error
+
+  /api/auth/forgot-password:
+    post:
+      summary: Request password reset
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: Password reset email sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '400':
+          description: Email is required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '404':
+          description: No user found with that email
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '500':
+          description: Internal Server Error
+
+  /api/auth/reset-password/{resetToken}:
+    post:
+      summary: Reset password
+      tags:
+        - Authentication
+      parameters:
+        - name: resetToken
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: Valid reset token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  userId:
+                    type: string
+        '400':
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '500':
+          description: Internal Server Error
+
+  /api/auth/set-new-password:
+    post:
+      summary: Set new password
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                userId:
+                  type: string
+                newPassword:
+                  type: string
+      responses:
+        '200':
+          description: Password updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '400':
+          description: All details are required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '500':
+          description: Internal Server Error
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:    
+    Event:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        location:
+          type: string
+        date:
+          type: string
+          format: date
+        startTime:
+          type: string
+          format: time
+        endTime:
+          type: string
+          format: time
+        isPaid:
+          type: boolean
+        ticketPrice:
+          type: number
+        maxAttendees:
+          type: integer
+        currentAttendees:
+          type: integer
+        category:
+          type: array
+          items:
+            type: string
+        images:
+          type: array
+          items:
+            type: string
+        isCancelled:
+          type: boolean
+    EventUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        location:
+          type: string
+        date:
+          type: string
+          format: date
+        startTime:
+          type: string
+          format: time
+        endTime:
+          type: string
+          format: time
+        isPaid:
+          type: boolean
+        ticketPrice:
+          type: number
+        maxAttendees:
+          type: integer
+        category:
+          type: array
+          items:
+            type: string
+        food_stalls:
+          type: boolean
+        discount:
+          type: number
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        fullname:
+          type: string
+        email:
+          type: string
+          format: email
+        profile_picture:
+          type: string
+        role:
+          type: string
+          enum: [user, organizer, admin]
+    Ticket:
+      type: object
+      properties:
+        _id:
+          type: string
+          description: The ID of the ticket.
+        event_id:
+          type: string
+          description: The ID of the associated event.
+        user_id:
+          type: string
+          description: The ID of the user who purchased the ticket.
+        ticket_type:
+          type: string
+          description: The type of ticket.
+        price:
+          type: number
+          format: float
+          description: The price of the ticket.
+        event_date:
+          type: string
+          format: date-time
+          description: The date of the event.
+        payment_status:
+          type: string
+          description: The payment status of the ticket.
+        qr_code:
+          type: string
+          description: The QR code for the ticket.
+        createdAt:
+          type: string
+          format: date-time
+          description: The date and time the ticket was created.
+        updatedAt:
+          type: string
+          format: date-time
+          description: The date and time the ticket was last updated.
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message.

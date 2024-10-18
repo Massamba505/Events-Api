@@ -22,7 +22,6 @@ router.post('/new-no-image', authenticate, createEventNoImage);
 router.put('/update/:id', authenticate, updateEvent);
 router.delete('/:id', deleteEvent);
 router.post('/:id/cancel', cancelEvent);
-// router.get('/myevents',authenticate, MyEvents);
 
 router.get('/:id',EventDetails);
 
