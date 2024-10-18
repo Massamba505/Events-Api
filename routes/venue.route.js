@@ -9,7 +9,7 @@ const {
 } = require('../controllers/venue.controller');
 
 const { authenticate } = require('../middlewares/protect.middleware');
-router.get('/',authenticate, getAllVenues);
+router.get('/', getAllVenues);
 router.get('/:name', getVenueByName);
 router.post('/',authenticate, addVenue);
 router.put('/:name',authenticate,updateVenue);
