@@ -29,12 +29,8 @@ connectToDatabase()
         server.listen(port);
         server.on('error', onError);
         server.on('listening', onListening);
-
-        console.log(`Server started on port ${port}`);
     })
     .catch((error) => {
-        // Database connection failed, exit the process
-        console.error("Server startup failed:", error.message);
         process.exit(1);
     });
 

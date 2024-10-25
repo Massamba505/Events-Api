@@ -41,7 +41,7 @@ const changePassword = async (req, res) => {
 
         return res.status(200).json({ message: 'Password changed successfully' });
     } catch (error) {
-        console.error('Error changing password:', error.message);
+        // console.error('Error changing password:', error.message);
         return res.status(500).json({ error: 'Internal Server Error' });
     }
 };
@@ -49,10 +49,6 @@ const changePassword = async (req, res) => {
 const getUserDetails = async (req, res) => {
     try {
         const user = req.user;
-
-        if (!user) {
-            return res.status(404).json({ error: 'User not found' });
-        }
 
         const userData = {
             role:user.role,
@@ -66,7 +62,7 @@ const getUserDetails = async (req, res) => {
         };
         res.status(200).json(userData);
     } catch (error) {
-        console.error('Error fetching user by ID:', error.message);
+        // console.error('Error fetching user by ID:', error.message);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 };
@@ -91,7 +87,7 @@ const getAllUserDetails = async (req, res) => {
 
         res.status(200).json(userData);
     } catch (error) {
-        console.error('Error fetching users:', error.message);
+        // console.error('Error fetching users:', error.message);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 };
@@ -132,7 +128,7 @@ const updateUserDetails = async (req, res) => {
             // Clean up temporary file asynchronously
             fs.unlink(imagePath, (err) => {
                 if (err) {
-                    console.error(`Error deleting file: ${imagePath}`, err);
+                    // console.error(`Error deleting file: ${imagePath}`, err);
                 }
             });
         }
@@ -160,7 +156,7 @@ const updateUserDetails = async (req, res) => {
         };
         res.status(201).json(userData);
     } catch (error) {
-        console.error('Error updating user:', error.message);
+        // console.error('Error updating user:', error.message);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 };
@@ -182,7 +178,7 @@ const updatePreferences = async (req, res) => {
   
       res.status(200).json({ success: true, message: 'Preferences updated successfully' });
     } catch (error) {
-      console.error('Error updating preferences:', error);
+    //   console.error('Error updating preferences:', error);
       res.status(500).json({ error: 'Internal Server Error' });
     }
 };
@@ -198,7 +194,7 @@ const getPreferences = async (req, res) => {
   
       res.status(200).json({ preferred_category: preferences.preferred_category });
     } catch (error) {
-      console.error('Error fetching preferences:', error);
+    //   console.error('Error fetching preferences:', error);
       res.status(500).json({ error: 'Internal Server Error' });
     }
 };
@@ -308,7 +304,7 @@ const updateUserRole = async (req, res) => {
         profile_picture: newuser.profile_picture || '' 
     });
     } catch (error) {
-      console.error(error);
+    //   console.error(error);
       return res.status(500).json({ error: 'Server error' });
     }
 };
