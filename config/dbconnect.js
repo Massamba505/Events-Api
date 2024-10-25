@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-// require("dotenv").config(); // Add this to load the .env file
 
 const connect = async () => {
   try {
