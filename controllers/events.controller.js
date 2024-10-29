@@ -741,7 +741,7 @@ const createEvent = async (req, res) => {
     const categoryIds = Array.isArray(category)
       ? category
       : JSON.parse(category);
-
+    
     // Create and save the new event
     const newEvent = new Event({
       user_id: req.user._id,
@@ -762,7 +762,7 @@ const createEvent = async (req, res) => {
     });
 
     if(['organizer','admin'].includes(req.user.role)){
-      newEvent.status = "accepted";
+      newEvent.status = "approved";
     }
 
     await newEvent.save(); // Save to the database
