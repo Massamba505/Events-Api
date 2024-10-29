@@ -3,6 +3,11 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const QRCode = require('qrcode');
 const Event = require("../models/event.model");
 
+const parseDate = (date) => {
+  // date format DD/MM/YYYY
+  const [DD, MM, YYYY] = date.split("/").map(Number);
+  return new Date(YYYY, MM - 1, DD);
+};
 
 const buyTicket2 = async (req, res) => {
   const { eventId, ticketType, price, eventDate } = req.body;
@@ -24,8 +29,8 @@ const buyTicket2 = async (req, res) => {
     return res.status(400).json({ error: 'Invalid or missing price for paid tickets' });
   }
 
-  if (!eventDate || isNaN(new Date(eventDate))) {
-    return res.status(400).json({ error: 'Invalid or missing eventDate' });
+  if (!eventDate || isNaN(new Date(parseDate(eventDate)))) {
+    return res.status(400).json({ error: 'Invalid or missing event date' });
   }
 
   try {
@@ -55,7 +60,7 @@ const buyTicket2 = async (req, res) => {
         user_id: userId,
         ticket_type: ticketType,
         price: 0,
-        event_date: eventDate,
+        event_date: parseDate(eventDate),
         payment_status: 'Paid',
       });
       
@@ -110,7 +115,7 @@ const buyTicket2 = async (req, res) => {
       ticket_type: ticketType,
       price: price,
       stripe_payment_intent_id: session.id, // Store session ID
-      event_date: eventDate,
+      event_date: parseDate(eventDate),
       payment_status: 'Pending',
     });
 
