@@ -35,13 +35,13 @@ Icon?
 Desktop.ini
 
 # Coverage directory for testing
-coverage/
+# coverage/
 
 # Testing files
-test/
-*.spec.js
-*.test.js
-__tests__/
+# test/
+# *.spec.js
+# *.test.js
+# __tests__/
 
 # IDE specific files
 .vscode/

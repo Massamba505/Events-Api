@@ -53,7 +53,7 @@ const allEvents = async (req, res) => {
       data: allevents,
     });
   } catch (error) {
-    console.error("Error in fetching events: ", error.message);
+    // console.error("Error in fetching events: ", error.message);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
@@ -73,7 +73,7 @@ const Calender = async (req, res) => {
       data: allevents,
     });
   } catch (error) {
-    console.error("Error in fetching events: ", error.message);
+    // console.error("Error in fetching events: ", error.message);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
@@ -87,8 +87,8 @@ const MyEvents = async (req, res) => {
       .populate("category");
     res.status(200).json(mapEvents(events));
   } catch (error) {
-    console.error("Error fetching events:", error);
-    res.status(500).json({ error: "Failed to fetch events" });
+    // console.error("Error fetching events:", error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 };
 
@@ -98,23 +98,6 @@ const allUpcomingEvents = async (req, res) => {
     let events = await Event.find({status:"approved"})
       .populate("user_id", "fullname email profile_picture")
       .populate("category");
-
-    if (user_id) {
-      const userPreference = await UserPreference.findOne({ user_id });
-      if (userPreference) {
-        events = events.sort((a, b) => {
-          const aInPreferredCategory = a.category.some((cat) =>
-            userPreference.preferred_category.includes(cat)
-          );
-          const bInPreferredCategory = b.category.some((cat) =>
-            userPreference.preferred_category.includes(cat)
-          );
-          if (aInPreferredCategory && !bInPreferredCategory) return -1;
-          if (!aInPreferredCategory && bInPreferredCategory) return 1;
-          return 0;
-        });
-      }
-    }
 
     const now = new Date();
     events = events.filter((event) => {
@@ -130,7 +113,7 @@ const allUpcomingEvents = async (req, res) => {
       data: allevents,
     });
   } catch (error) {
-    console.error("Error in fetching upcoming events: ", error.message);
+    // console.error("Error in fetching upcoming events: ", error.message);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
@@ -142,25 +125,6 @@ const allInProgressEvents = async (req, res) => {
     let events = await Event.find({status:"approved"})
       .populate("user_id", "fullname email profile_picture")
       .populate("category");
-
-    if (user_id) {
-      const userPreference = await UserPreference.findOne({ user_id });
-
-      if (userPreference) {
-        events = events.sort((a, b) => {
-          const aInPreferredCategory = a.category.some((cat) =>
-            userPreference.preferred_category.includes(cat)
-          );
-          const bInPreferredCategory = b.category.some((cat) =>
-            userPreference.preferred_category.includes(cat)
-          );
-
-          if (aInPreferredCategory && !bInPreferredCategory) return -1;
-          if (!aInPreferredCategory && bInPreferredCategory) return 1;
-          return 0;
-        });
-      }
-    }
 
     const now = new Date();
     events = events.filter((event) => {
@@ -177,7 +141,7 @@ const allInProgressEvents = async (req, res) => {
       data: allevents,
     });
   } catch (error) {
-    console.error("Error in fetching events: ", error.message);
+    // console.error("Error in fetching events: ", error.message);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
@@ -189,25 +153,6 @@ const allPastEvents = async (req, res) => {
     let events = await Event.find({status:"approved"})
       .populate("user_id", "fullname email profile_picture")
       .populate("category");
-
-    if (user_id) {
-      const userPreference = await UserPreference.findOne({ user_id });
-
-      if (userPreference) {
-        events = events.sort((a, b) => {
-          const aInPreferredCategory = a.category.some((cat) =>
-            userPreference.preferred_category.includes(cat)
-          );
-          const bInPreferredCategory = b.category.some((cat) =>
-            userPreference.preferred_category.includes(cat)
-          );
-
-          if (aInPreferredCategory && !bInPreferredCategory) return -1;
-          if (!aInPreferredCategory && bInPreferredCategory) return 1;
-          return 0;
-        });
-      }
-    }
 
     const now = new Date();
     events = events.filter((event) => {
@@ -223,7 +168,7 @@ const allPastEvents = async (req, res) => {
       data: allevents,
     });
   } catch (error) {
-    console.error("Error in fetching events: ", error.message);
+    // console.error("Error in fetching events: ", error.message);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
@@ -246,7 +191,7 @@ const getPopularEvents = async (req, res) => {
       data: allevents,
     });
   } catch (error) {
-    console.error("Error in fetching popular events: ", error.message);
+    // console.error("Error in fetching popular events: ", error.message);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
@@ -289,12 +234,79 @@ const getRecommendedEvents = async (req, res) => {
       data: allevents,
     });
   } catch (error) {
-    console.error("Error in fetching recommended events: ", error.message);
+    // console.error("Error in fetching recommended events: ", error.message);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
 
-// ==================================================================================
+const search2 = async (req, res) => {
+  const { query } = req.query;
+
+  // Check if query is provided
+  if (!query) {
+    return res.status(400).json({ error: "Query parameter is required" });
+  }
+
+  try {
+    // Find events by query and populate category details
+    const events = await Event.aggregate([
+      {
+        $lookup: {
+          from: Category.collection.name,
+          localField: "category",
+          foreignField: "_id",
+          as: "categoryDetails", // Attaching category details
+        },
+      },
+      {
+        $match: {
+          isCancelled: false, // Ensure the event is not cancelled
+          $or: [
+            { title: { $regex: query, $options: "i" } },
+            { description: { $regex: query, $options: "i" } },
+            { "categoryDetails.name": { $regex: query, $options: "i" } }, // Searching within category names
+          ],
+        },
+      },
+    ]);
+
+    if (events.length === 0) {
+      return res.status(200).json({ data: [] });
+    }
+
+    // Extract user IDs from the events
+    const userIds = events.map((event) => event.user_id);
+
+    // Fetch users for the events
+    const users = await userModel.find(
+      { _id: { $in: userIds } },
+      "fullname email profile_picture"
+    );
+
+    // Create a user lookup map for quick access
+    const userMap = users.reduce((map, user) => {
+      map[user._id] = user;
+      return map;
+    }, {});
+
+    // Map user and category details into each event
+    const eventsWithDetails = events.map((event) => ({
+      ...event,
+      user_id: userMap[event.user_id], // Attach user details
+      category: event.categoryDetails, // Attach category details (populated)
+    }));
+
+    const list = mapEvents(eventsWithDetails);
+
+    res.status(200).json({ 
+      "success": true,
+      "count": list.length,
+      data: list });
+  } catch (error) {
+    // console.error("Error fetching events:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+};
 
 const sort = async (req, res) => {
   try {
@@ -306,25 +318,6 @@ const sort = async (req, res) => {
       path: "user_id",
       select: "fullname",
     });
-
-    if (user_id) {
-      const userPreference = await UserPreference.findOne({ user_id });
-
-      if (userPreference) {
-        events = events.sort((a, b) => {
-          const aInPreferredCategory = a.category.some((cat) =>
-            userPreference.preferred_category.includes(cat)
-          );
-          const bInPreferredCategory = b.category.some((cat) =>
-            userPreference.preferred_category.includes(cat)
-          );
-
-          if (aInPreferredCategory && !bInPreferredCategory) return -1;
-          if (!aInPreferredCategory && bInPreferredCategory) return 1;
-          return 0;
-        });
-      }
-    }
 
     switch (criteria.toLowerCase()) {
       case "title":
@@ -355,7 +348,7 @@ const sort = async (req, res) => {
       data: allevents,
     });
   } catch (error) {
-    console.error("Error in sorting events: ", error.message);
+    // console.error("Error in sorting events: ", error.message);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
@@ -415,7 +408,7 @@ const EventDetails = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error in Event Details: ", error.message);
+    // console.error("Error in Event Details: ", error.message);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
@@ -593,7 +586,7 @@ const updateEvent = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error updating event:", error.message);
+    // console.error("Error updating event:", error.message);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
@@ -622,7 +615,7 @@ const deleteEvent = async (req, res) => {
       message: "Event deleted successfully.",
     });
   } catch (error) {
-    console.error("Error deleting event:", error);
+    // console.error("Error deleting event:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
@@ -652,7 +645,7 @@ const cancelEvent = async (req, res) => {
 
     res.status(200).json({ success: true });
   } catch (error) {
-    console.error("Error in cancelling an events: ", error.message);
+    // console.error("Error in cancelling an events: ", error.message);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
@@ -731,13 +724,13 @@ const createEvent = async (req, res) => {
           // Clean up temporary file asynchronously
           fs.unlink(imagePath, (err) => {
             if (err) {
-              console.error(`Error deleting file: ${imagePath}`, err);
+              // console.error(`Error deleting file: ${imagePath}`, err);
             }
           });
 
           return imageUrl;
         } catch (error) {
-          console.error("Error uploading image:", error);
+          // console.error("Error uploading image:", error);
           throw new Error("Image upload failed");
         }
       });
@@ -795,181 +788,112 @@ const createEvent = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error creating event:", error);
+    // console.error("Error creating event:", error);
     res.status(500).json({ error: "Server error" });
   }
 };
 
-const createEventNoImage = async (req, res) => {
-  try {
-    const {
-      title,
-      description,
-      location,
-      date,
-      startTime,
-      endTime,
-      isPaid,
-      ticketPrice,
-      maxAttendees = null,
-      category,
-      food_stalls = false,
-    } = req.body;
+// const createEventNoImage = async (req, res) => {
+//   try {
+//     const {
+//       title,
+//       description,
+//       location,
+//       date,
+//       startTime,
+//       endTime,
+//       isPaid,
+//       ticketPrice,
+//       maxAttendees = null,
+//       category,
+//       food_stalls = false,
+//     } = req.body;
 
-    // Validate required fields
-    if (
-      !title ||
-      !description ||
-      !location ||
-      !date ||
-      !startTime ||
-      !endTime ||
-      typeof isPaid === "undefined"
-    ) {
-      return res
-        .status(400)
-        .json({ error: "Please fill in all required fields." });
-    }
+//     // Validate required fields
+//     if (
+//       !title ||
+//       !description ||
+//       !location ||
+//       !date ||
+//       !startTime ||
+//       !endTime ||
+//       typeof isPaid === "undefined"
+//     ) {
+//       return res
+//         .status(400)
+//         .json({ error: "Please fill in all required fields." });
+//     }
 
-    // Cast strings to booleans
-    const isPaidBoolean = isPaid === "true" || isPaid === true; // Convert string "true"/"false" to boolean
-    const foodStallsBoolean = food_stalls === "true" || food_stalls === true;
+//     // Cast strings to booleans
+//     const isPaidBoolean = isPaid === "true" || isPaid === true; // Convert string "true"/"false" to boolean
+//     const foodStallsBoolean = food_stalls === "true" || food_stalls === true;
 
-    // Validate ticket price for paid events
-    let price = 0;
-    if (isPaidBoolean) {
-      price = parseFloat(ticketPrice);
+//     // Validate ticket price for paid events
+//     let price = 0;
+//     if (isPaidBoolean) {
+//       price = parseFloat(ticketPrice);
 
-      if (isNaN(price) || price <= 0) {
-        return res.status(400).json({
-          error:
-            "Please provide a valid ticket price greater than zero for paid events.",
-        });
-      }
-    }
+//       if (isNaN(price) || price <= 0) {
+//         return res.status(400).json({
+//           error:
+//             "Please provide a valid ticket price greater than zero for paid events.",
+//         });
+//       }
+//     }
 
-    // Generate a new event_id
-    const lastEvent = await Event.findOne().sort({ event_id: -1 }).exec();
-    const newEventId = lastEvent ? lastEvent.event_id + 1 : 1000;
+//     // Generate a new event_id
+//     const lastEvent = await Event.findOne().sort({ event_id: -1 }).exec();
+//     const newEventId = lastEvent ? lastEvent.event_id + 1 : 1000;
 
-    // Ensure category is an array of ObjectId
-    const categoryIds = Array.isArray(category)
-      ? category
-      : JSON.parse(category);
+//     // Ensure category is an array of ObjectId
+//     const categoryIds = Array.isArray(category)
+//       ? category
+//       : JSON.parse(category);
 
-    // Create and save the new event
-    const newEvent = new Event({
-      user_id: req.user._id,
-      event_id: newEventId,
-      title,
-      description,
-      location,
-      date,
-      start_time: startTime,
-      end_time: endTime,
-      is_paid: isPaidBoolean,
-      ticket_price: isPaidBoolean ? price : 0,
-      max_attendees: maxAttendees,
-      category: categoryIds,
-      food_stalls: foodStallsBoolean,
-    });
+//     // Create and save the new event
+//     const newEvent = new Event({
+//       user_id: req.user._id,
+//       event_id: newEventId,
+//       title,
+//       description,
+//       location,
+//       date,
+//       start_time: startTime,
+//       end_time: endTime,
+//       is_paid: isPaidBoolean,
+//       ticket_price: isPaidBoolean ? price : 0,
+//       max_attendees: maxAttendees,
+//       category: categoryIds,
+//       food_stalls: foodStallsBoolean,
+//     });
 
-    await newEvent.save(); // Save to the database
+//     await newEvent.save(); // Save to the database
 
-    res.status(201).json({
-      message: "Event created successfully",
-      event: {
-        id: newEvent._id.toString(),
-        event_id: newEvent.event_id,
-        eventAuthor: newEvent.user_id.fullname,
-        title: newEvent.title,
-        description: newEvent.description,
-        location: newEvent.location,
-        date: newEvent.date,
-        startTime: newEvent.start_time,
-        endTime: newEvent.end_time,
-        isPaid: newEvent.is_paid,
-        ticketPrice: newEvent.ticket_price,
-        maxAttendees: newEvent.max_attendees,
-        currentAttendees: newEvent.current_attendees,
-        category: newEvent.category,
-      },
-    });
-  } catch (error) {
-    console.error("Error creating event:", error);
-    res.status(500).json({ error: "Server error" });
-  }
-};
+//     res.status(201).json({
+//       message: "Event created successfully",
+//       event: {
+//         id: newEvent._id.toString(),
+//         event_id: newEvent.event_id,
+//         eventAuthor: newEvent.user_id.fullname,
+//         title: newEvent.title,
+//         description: newEvent.description,
+//         location: newEvent.location,
+//         date: newEvent.date,
+//         startTime: newEvent.start_time,
+//         endTime: newEvent.end_time,
+//         isPaid: newEvent.is_paid,
+//         ticketPrice: newEvent.ticket_price,
+//         maxAttendees: newEvent.max_attendees,
+//         currentAttendees: newEvent.current_attendees,
+//         category: newEvent.category,
+//       },
+//     });
+//   } catch (error) {
+//     // console.error("Error creating event:", error);
+//     res.status(500).json({ error: "Server error" });
+//   }
+// };
 
-
-const search2 = async (req, res) => {
-  const { query } = req.query;
-
-  // Check if query is provided
-  if (!query) {
-    return res.status(400).json({ error: "Query parameter is required" });
-  }
-
-  try {
-    // Find events by query and populate category details
-    const events = await Event.aggregate([
-      {
-        $lookup: {
-          from: Category.collection.name,
-          localField: "category",
-          foreignField: "_id",
-          as: "categoryDetails", // Attaching category details
-        },
-      },
-      {
-        $match: {
-          isCancelled: false, // Ensure the event is not cancelled
-          $or: [
-            { title: { $regex: query, $options: "i" } },
-            { description: { $regex: query, $options: "i" } },
-            { "categoryDetails.name": { $regex: query, $options: "i" } }, // Searching within category names
-          ],
-        },
-      },
-    ]);
-
-    if (events.length === 0) {
-      return res.status(200).json({ data: [] });
-    }
-
-    // Extract user IDs from the events
-    const userIds = events.map((event) => event.user_id);
-
-    // Fetch users for the events
-    const users = await userModel.find(
-      { _id: { $in: userIds } },
-      "fullname email profile_picture"
-    );
-
-    // Create a user lookup map for quick access
-    const userMap = users.reduce((map, user) => {
-      map[user._id] = user;
-      return map;
-    }, {});
-
-    // Map user and category details into each event
-    const eventsWithDetails = events.map((event) => ({
-      ...event,
-      user_id: userMap[event.user_id], // Attach user details
-      category: event.categoryDetails, // Attach category details (populated)
-    }));
-
-    const list = mapEvents(eventsWithDetails);
-
-    res.status(200).json({ 
-      "success": true,
-      "count": list.length,
-      data: list });
-  } catch (error) {
-    console.error("Error fetching events:", error);
-    res.status(500).json({ error: "Server error" });
-  }
-};
 
 //=====================admin===========================
 const changeEventStatus = async (req, res) => {
@@ -996,7 +920,7 @@ const changeEventStatus = async (req, res) => {
     // Respond with the updated event
     return res.status(200).json({ message: 'Status updated successfully.', event: updatedEvent });
   } catch (error) {
-    console.error(error);
+    // console.error(error);
     return res.status(500).json({ message: 'Server error. Please try again later.' });
   }
 };
@@ -1020,7 +944,7 @@ const pendingEvents = async (req, res) => {
       data: allevents,
     });
   } catch (error) {
-    console.error("Error in fetching pending events: ", error.message);
+    // console.error("Error in fetching pending events: ", error.message);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
@@ -1030,7 +954,7 @@ module.exports = {
   createEvent,
   updateEvent,
   deleteEvent,
-  createEventNoImage,
+  // createEventNoImage,
   allEvents,
   allUpcomingEvents,
   allInProgressEvents,

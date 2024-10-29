@@ -54,7 +54,7 @@ const login = async (req, res) => {
       token
     });
   } catch (error) {
-    console.log("Error in login controller", error.message);
+    // console.log("Error in login controller", error.message);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
@@ -120,7 +120,7 @@ const logout = async (req, res) => {
     res.cookie("jwt", "", { maxAge: 0 });
     res.status(200).json({ message: "Logged out successfully" });
   } catch (error) {
-    console.log("Error in logout controller", error.message);
+    // console.log("Error in logout controller", error.message);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
@@ -142,7 +142,7 @@ const forgotPassword = async (req, res) => {
     const resetToken = Math.floor(1000 + Math.random() * 9000).toString();
     const hash = await bcrypt.hash(resetToken, 10);
 
-    console.log(resetToken);
+    // console.log(resetToken);
 
     user.resetPasswordToken = hash;
     user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
@@ -217,7 +217,7 @@ const resetPassword = async (req, res) => {
 
     res.status(200).json({ message: "Valid reset token", userId: user._id });
   } catch (error) {
-    console.log("Error in resetPassword controller", error.message);
+    // console.log("Error in resetPassword controller", error.message);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
@@ -244,7 +244,7 @@ const setNewPassword = async (req, res) => {
 
     res.status(200).json({ message: "Password updated successfully" });
   } catch (error) {
-    console.log("Error in setNewPassword controller", error.message);
+    // console.log("Error in setNewPassword controller", error.message);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
