@@ -4,7 +4,6 @@ From the chaos of missed opportunities and fleeting gatherings, a beacon shall r
 And we shall call it **EventHub**, for it shall be the thread that weaves together the fabric of our lives, connecting hearts and minds in a tapestry of unforgettable moments.
 
 
-
 ## Introduction
 
 This is a group project for the Software Design Project (COMS3011A) module. We, the following students, have collaborated to create this project:
