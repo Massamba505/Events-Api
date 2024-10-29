@@ -96,6 +96,7 @@ const allUpcomingEvents = async (req, res) => {
   try {
     const user_id = req.user ? req.user._id : null;
     let events = await Event.find({status:"approved"})
+      .sort({ createdAt: -1 })
       .populate("user_id", "fullname email profile_picture")
       .populate("category");
 
@@ -123,6 +124,7 @@ const allInProgressEvents = async (req, res) => {
     const user_id = req.user ? req.user._id : null;
 
     let events = await Event.find({status:"approved"})
+      .sort({ createdAt: -1 })
       .populate("user_id", "fullname email profile_picture")
       .populate("category");
 
@@ -176,6 +178,7 @@ const allPastEvents = async (req, res) => {
 const getPopularEvents = async (req, res) => {
   try {
     let events = await Event.find({status:"approved"})
+      .sort({ createdAt: -1 })
       .populate("user_id", "fullname email profile_picture")
       .populate("category");
 
@@ -219,6 +222,7 @@ const getRecommendedEvents = async (req, res) => {
       status:"approved",
       category: { $in: userPreference.preferred_category },
     })
+      .sort({ createdAt: -1 })
       .populate("user_id", "fullname email profile_picture")
       .populate("category");
 
@@ -268,7 +272,8 @@ const search2 = async (req, res) => {
           ],
         },
       },
-    ]);
+    ])
+    .sort({ createdAt: -1 });
 
     if (events.length === 0) {
       return res.status(200).json({ data: [] });
