@@ -98,11 +98,12 @@ const buyTicket2 = async (req, res) => {
     }
 
     // Create a product in Stripe for the event if it doesn't already exist
-    console.log(event.images);
+    
     const product = await stripe.products.create({
       name: event.title,
-      images: event.images && event.images.length > 0 ? [event.images[0]] : [],
+      images: event.images,
     });
+
 
     // Create a price for the product
     const stripePrice = await stripe.prices.create({
@@ -124,6 +125,7 @@ const buyTicket2 = async (req, res) => {
       success_url: `${process.env.BASE_URL}/tickets/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.BASE_URL}/tickets/cancel?session_id={CHECKOUT_SESSION_ID}`,
     });
+    // console.log(session)
 
     // Create the ticket with payment status as Pending
     ticket = new Ticket({
